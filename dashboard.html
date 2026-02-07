@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,9 +6,11 @@
   <title>PAPI Admin Panel</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+
   <style>
     * {
       box-sizing: border-box;
@@ -290,6 +293,11 @@
       color: #b45309;
     }
 
+    .badge-status {
+      background: #ecfdf5;
+      color: #15803d;
+    }
+
     .muted {
       font-size: 12px;
       color: #9ca3af;
@@ -314,12 +322,14 @@
     }
 
     .inline-input input,
-    .inline-input select {
+    .inline-input select,
+    .inline-input textarea {
       width: 100%;
       border-radius: 8px;
       border: 1px solid #e5e7eb;
       padding: 7px 9px;
       font-size: 13px;
+      resize: vertical;
     }
 
     /* Loading overlay */
@@ -407,8 +417,8 @@
     </ul>
 
     <div class="sidebar-footer">
-      © PAPI • v0.1<br />
-      (Backend jald hi connect hoga)
+      © PAPI • v0.2<br />
+      (Frontend complete, backend next)
     </div>
   </aside>
 
@@ -433,23 +443,23 @@
         <div class="grid">
           <div class="card">
             <div class="card-title">Total Courses</div>
-            <div class="card-value" id="stat-courses">2</div>
+            <div class="card-value" id="stat-courses">0</div>
             <div class="card-sub">Free + paid</div>
           </div>
           <div class="card">
             <div class="card-title">Total Tests</div>
-            <div class="card-value" id="stat-tests">3</div>
+            <div class="card-value" id="stat-tests">0</div>
             <div class="card-sub">Active test series</div>
           </div>
           <div class="card">
-            <div class="card-title">Last Update</div>
-            <div class="card-value">Today</div>
-            <div class="card-sub">Dummy data for now</div>
+            <div class="card-title">Total Updates</div>
+            <div class="card-value" id="stat-updates">0</div>
+            <div class="card-sub">Announcements</div>
           </div>
         </div>
 
         <p class="muted">
-          Ye sirf UI hai. Backend add hone ke baad ye stats database se aayenge.
+          Abhi stats frontend arrays se aa rahe hain. Backend connect karte hi ye live data ho jayega.
         </p>
       </section>
 
@@ -457,7 +467,7 @@
       <section class="section" id="section-courses">
         <div class="section-header">
           <h2 class="section-title">Courses</h2>
-          <button class="btn-primary" id="addCourseBtn">+ Quick add</button>
+          <button class="btn-primary" id="addCourseScrollBtn">+ Add new course</button>
         </div>
 
         <table id="coursesTable">
@@ -468,42 +478,20 @@
               <th>Level</th>
               <th>Type</th>
               <th>Price</th>
-              <th style="width: 120px;">Actions</th>
+              <th style="width: 140px;">Actions</th>
             </tr>
           </thead>
           <tbody>
-            <!-- Dummy rows -->
-            <tr>
-              <td>1</td>
-              <td>Physics Crash Course</td>
-              <td>Class 11</td>
-              <td><span class="badge badge-free">Free</span></td>
-              <td>₹0</td>
-              <td>
-                <button class="btn-secondary">Edit</button>
-                <button class="btn-secondary">Delete</button>
-              </td>
-            </tr>
-            <tr>
-              <td>2</td>
-              <td>Complete Maths Booster</td>
-              <td>Class 12</td>
-              <td><span class="badge badge-paid">Paid</span></td>
-              <td>₹999</td>
-              <td>
-                <button class="btn-secondary">Edit</button>
-                <button class="btn-secondary">Delete</button>
-              </td>
-            </tr>
           </tbody>
         </table>
 
+        <!-- Inline add / edit form -->
         <form class="inline-form" id="courseForm">
           <div class="inline-input">
             <input type="text" id="courseTitle" placeholder="Course title" required />
           </div>
           <div class="inline-input">
-            <input type="text" id="courseLevel" placeholder="Level (e.g. Class 11)" />
+            <input type="text" id="courseLevel" placeholder="Level (e.g. Class 11 / JEE)" />
           </div>
           <div class="inline-input">
             <select id="courseType">
@@ -514,11 +502,17 @@
           <div class="inline-input">
             <input type="number" id="coursePrice" placeholder="Price (₹)" min="0" />
           </div>
-          <button type="submit" class="btn-primary">Save to table</button>
+          <div class="inline-input">
+            <input type="text" id="courseSubtitle" placeholder="Subtitle (short tagline)" />
+          </div>
+          <button type="submit" class="btn-primary" id="courseSubmitBtn">Save course</button>
+          <button type="button" class="btn-secondary" id="courseCancelEditBtn" style="display:none;">
+            Cancel edit
+          </button>
         </form>
 
         <p class="muted">
-          Filhaal ye form sirf table me row add karta hai (frontend). Backend ke baad yahi DB me save karega.
+          Course add/edit/delete abhi frontend pe hi ho raha hai. Baad me yahi data Firestore/DB me save karenge.
         </p>
       </section>
 
@@ -526,10 +520,10 @@
       <section class="section" id="section-tests">
         <div class="section-header">
           <h2 class="section-title">Tests</h2>
-          <button class="btn-primary">+ New test</button>
+          <button class="btn-primary" id="addTestScrollBtn">+ Add new test</button>
         </div>
 
-        <table>
+        <table id="testsTable">
           <thead>
             <tr>
               <th>#</th>
@@ -538,30 +532,40 @@
               <th>Questions</th>
               <th>Duration</th>
               <th>Status</th>
+              <th style="width: 120px;">Actions</th>
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td>1</td>
-              <td>JEE Mock Test 01</td>
-              <td>Physics Crash Course</td>
-              <td>25</td>
-              <td>60 min</td>
-              <td><span class="badge badge-free">Free</span></td>
-            </tr>
-            <tr>
-              <td>2</td>
-              <td>NEET Practice Set</td>
-              <td>Complete Biology</td>
-              <td>50</td>
-              <td>90 min</td>
-              <td><span class="badge badge-paid">Premium</span></td>
-            </tr>
           </tbody>
         </table>
 
+        <form class="inline-form" id="testForm">
+          <div class="inline-input">
+            <input type="text" id="testName" placeholder="Test title" required />
+          </div>
+          <div class="inline-input">
+            <input type="text" id="testCourse" placeholder="Belongs to course" />
+          </div>
+          <div class="inline-input">
+            <input type="number" id="testQuestions" placeholder="Questions" min="1" />
+          </div>
+          <div class="inline-input">
+            <input type="text" id="testDuration" placeholder="Duration (e.g. 60 min)" />
+          </div>
+          <div class="inline-input">
+            <select id="testStatus">
+              <option value="free">Free</option>
+              <option value="premium">Premium</option>
+            </select>
+          </div>
+          <button type="submit" class="btn-primary" id="testSubmitBtn">Save test</button>
+          <button type="button" class="btn-secondary" id="testCancelEditBtn" style="display:none;">
+            Cancel edit
+          </button>
+        </form>
+
         <p class="muted">
-          Baad me yahan test create/edit/delete ke proper forms banayenge.
+          Yaha se tum mock tests/series manage kar paoge. Abhi ke liye ye data browser me hi stored hai.
         </p>
       </section>
 
@@ -569,36 +573,41 @@
       <section class="section" id="section-updates">
         <div class="section-header">
           <h2 class="section-title">Updates</h2>
-          <button class="btn-primary">+ New update</button>
+          <button class="btn-primary" id="addUpdateScrollBtn">+ Add new update</button>
         </div>
 
-        <table>
+        <table id="updatesTable">
           <thead>
             <tr>
               <th>#</th>
               <th>Title</th>
               <th>Visible to</th>
               <th>Created at</th>
+              <th style="width: 120px;">Actions</th>
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td>1</td>
-              <td>New Chemistry batch starting next week</td>
-              <td>All students</td>
-              <td>Today</td>
-            </tr>
-            <tr>
-              <td>2</td>
-              <td>New free mock tests added for JEE</td>
-              <td>JEE students</td>
-              <td>Yesterday</td>
-            </tr>
           </tbody>
         </table>
 
+        <form class="inline-form" id="updateForm">
+          <div class="inline-input">
+            <input type="text" id="updateTitle" placeholder="Update title" required />
+          </div>
+          <div class="inline-input">
+            <input type="text" id="updateAudience" placeholder="Visible to (e.g. All / JEE / NEET)" />
+          </div>
+          <div class="inline-input">
+            <textarea id="updateBody" rows="2" placeholder="Short description"></textarea>
+          </div>
+          <button type="submit" class="btn-primary" id="updateSubmitBtn">Save update</button>
+          <button type="button" class="btn-secondary" id="updateCancelEditBtn" style="display:none;">
+            Cancel edit
+          </button>
+        </form>
+
         <p class="muted">
-          Backend ke saath ye updates API se PAPI app tak jaayengi.
+          Ye updates PAPI app ke "Updates" tab me jaayenge. Backend connect karke API bana denge.
         </p>
       </section>
 
@@ -618,21 +627,21 @@
   </div>
 
   <script>
-    // Same Firebase config yahan bhi
-    const firebaseConfig = {
-      apiKey: "AIzaSyBnDo5VJiM2noDWRWk281aVaUfPZ-sX08A",
-      authDomain: "papi0009.firebaseapp.com",
-      projectId: "papi0009",
-      storageBucket: "papi0009.firebasestorage.app",
-      messagingSenderId: "598318485319",
-      appId: "1:598318485319:web:b26e84907d49a92d42c662"
+    // 🔐 Firebase config (same as index.html)
+const firebaseConfig = {
+  apiKey: "AIzaSyBnDo5VJiM2noDWRWk281aVaUfPZ-sX08A",
+  authDomain: "papi0009.firebaseapp.com",
+  projectId: "papi0009",
+  storageBucket: "papi0009.firebasestorage.app",
+  messagingSenderId: "598318485319",
+  appId: "1:598318485319:web:b26e84907d49a92d42c662",
     };
 
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
 
     const ALLOWED_ADMINS = [
-      "admin@papi.in" // yahi email login kar sakega
+      "admin@papi.in" // apna admin email
     ];
 
     const overlay = document.getElementById('overlay');
@@ -642,14 +651,11 @@
 
     auth.onAuthStateChanged((user) => {
       if (!user || !user.email || !ALLOWED_ADMINS.includes(user.email)) {
-        // Not authorized → logout + redirect
         if (user) auth.signOut();
         window.location.href = 'index.html';
       } else {
-        // Authorized admin
         adminEmailSpan.textContent = user.email;
-        const initial = user.email.charAt(0).toUpperCase();
-        avatarInitial.textContent = initial;
+        avatarInitial.textContent = user.email.charAt(0).toUpperCase();
         overlay.style.display = 'none';
       }
     });
@@ -659,7 +665,63 @@
       window.location.href = 'index.html';
     });
 
-    // Sidebar navigation
+    // ===== FRONTEND STATE (dummy data) =====
+    let courses = [
+      {
+        id: 1,
+        title: "Physics Crash Course",
+        level: "Class 11",
+        type: "free",
+        price: 0,
+        subtitle: "Mechanics fast revision"
+      },
+      {
+        id: 2,
+        title: "Complete Maths Booster",
+        level: "Class 12",
+        type: "paid",
+        price: 999,
+        subtitle: "Boards + JEE focused"
+      }
+    ];
+
+    let tests = [
+      {
+        id: 1,
+        name: "JEE Mock Test 01",
+        course: "Physics Crash Course",
+        questions: 25,
+        duration: "60 min",
+        status: "free"
+      },
+      {
+        id: 2,
+        name: "NEET Practice Set",
+        course: "Complete Biology",
+        questions: 50,
+        duration: "90 min",
+        status: "premium"
+      }
+    ];
+
+    let updates = [
+      {
+        id: 1,
+        title: "New Chemistry batch starting next week",
+        audience: "All students",
+        body: "Seats limited, enroll soon.",
+        createdAt: "Today"
+      },
+      {
+        id: 2,
+        title: "Free JEE mock tests added",
+        audience: "JEE students",
+        body: "Check the Tests tab in the app.",
+        createdAt: "Yesterday"
+      }
+    ];
+
+    // ===== NAVIGATION =====
     const navLinks = document.querySelectorAll('.nav-link');
     const sections = document.querySelectorAll('.section');
 
@@ -680,54 +742,359 @@
       });
     });
 
-    // Courses quick-add form (frontend only)
-    const courseForm = document.getElementById('courseForm');
+    // ===== COURSES FRONTEND LOGIC =====
     const coursesTableBody = document.querySelector('#coursesTable tbody');
+    const courseForm = document.getElementById('courseForm');
     const statCourses = document.getElementById('stat-courses');
+    const courseTitleInput = document.getElementById('courseTitle');
+    const courseLevelInput = document.getElementById('courseLevel');
+    const courseTypeInput = document.getElementById('courseType');
+    const coursePriceInput = document.getElementById('coursePrice');
+    const courseSubtitleInput = document.getElementById('courseSubtitle');
+    const courseSubmitBtn = document.getElementById('courseSubmitBtn');
+    const courseCancelEditBtn = document.getElementById('courseCancelEditBtn');
+    const addCourseScrollBtn = document.getElementById('addCourseScrollBtn');
 
-    function updateCourseCount() {
-      const rows = coursesTableBody.querySelectorAll('tr').length;
-      statCourses.textContent = rows.toString();
+    let editingCourseId = null;
+
+    function renderCourses() {
+      coursesTableBody.innerHTML = '';
+      courses.forEach((course, index) => {
+        const tr = document.createElement('tr');
+        const isFree = course.type === 'free';
+        tr.innerHTML = `
+          <td>${index + 1}</td>
+          <td>
+            <strong>${course.title}</strong><br/>
+            <span style="font-size:11px;color:#6b7280;">${course.subtitle || ''}</span>
+          </td>
+          <td>${course.level || '-'}</td>
+          <td>
+            <span class="badge ${isFree ? 'badge-free' : 'badge-paid'}">
+              ${isFree ? 'Free' : 'Paid'}
+            </span>
+          </td>
+          <td>₹${course.price || 0}</td>
+          <td>
+            <button class="btn-secondary" data-action="edit" data-id="${course.id}">Edit</button>
+            <button class="btn-secondary" data-action="delete" data-id="${course.id}">Delete</button>
+          </td>
+        `;
+        coursesTableBody.appendChild(tr);
+      });
+      statCourses.textContent = courses.length.toString();
     }
 
-    updateCourseCount();
+    coursesTableBody.addEventListener('click', (e) => {
+      const btn = e.target;
+      if (!(btn instanceof HTMLElement)) return;
+      const action = btn.getAttribute('data-action');
+      const id = btn.getAttribute('data-id');
+      if (!action || !id) return;
 
-    courseForm.addEventListener('submit', function (e) {
+      const courseId = parseInt(id, 10);
+      if (action === 'delete') {
+        if (confirm('Delete this course?')) {
+          courses = courses.filter((c) => c.id !== courseId);
+          if (editingCourseId === courseId) {
+            resetCourseForm();
+          }
+          renderCourses();
+        }
+      } else if (action === 'edit') {
+        const course = courses.find((c) => c.id === courseId);
+        if (!course) return;
+        editingCourseId = course.id;
+        courseTitleInput.value = course.title;
+        courseLevelInput.value = course.level || '';
+        courseTypeInput.value = course.type;
+        coursePriceInput.value = course.price || 0;
+        courseSubtitleInput.value = course.subtitle || '';
+        courseSubmitBtn.textContent = 'Update course';
+        courseCancelEditBtn.style.display = 'inline-flex';
+        courseTitleInput.focus();
+        courseForm.scrollIntoView({ behavior: 'smooth' });
+      }
+    });
+
+    function resetCourseForm() {
+      editingCourseId = null;
+      courseForm.reset();
+      courseSubmitBtn.textContent = 'Save course';
+      courseCancelEditBtn.style.display = 'none';
+    }
+
+    courseCancelEditBtn.addEventListener('click', resetCourseForm);
+
+    courseForm.addEventListener('submit', (e) => {
       e.preventDefault();
-
-      const title = document.getElementById('courseTitle').value.trim();
-      const level = document.getElementById('courseLevel').value.trim();
-      const type = document.getElementById('courseType').value;
-      const priceInput = document.getElementById('coursePrice').value.trim();
-
+      const title = courseTitleInput.value.trim();
       if (!title) return;
 
-      const isFree = type === 'free';
-      const price = priceInput === '' ? (isFree ? 0 : 0) : Number(priceInput);
+      const level = courseLevelInput.value.trim();
+      const type = courseTypeInput.value;
+      const price = coursePriceInput.value ? Number(coursePriceInput.value) : 0;
+      const subtitle = courseSubtitleInput.value.trim();
 
-      const rowCount = coursesTableBody.querySelectorAll('tr').length;
-      const newRow = document.createElement('tr');
+      if (editingCourseId) {
+        courses = courses.map((c) =>
+          c.id === editingCourseId
+            ? { ...c, title, level, type, price, subtitle }
+            : c
+        );
+      } else {
+        const newId = (courses[courses.length - 1]?.id || 0) + 1;
+        courses.push({
+          id: newId,
+          title,
+          level,
+          type,
+          price,
+          subtitle
+        });
+      }
 
-      newRow.innerHTML = `
-        <td>${rowCount + 1}</td>
-        <td>${title}</td>
-        <td>${level || '-'}</td>
-        <td>
-          <span class="badge ${isFree ? 'badge-free' : 'badge-paid'}">
-            ${isFree ? 'Free' : 'Paid'}
-          </span>
-        </td>
-        <td>₹${price}</td>
-        <td>
-          <button class="btn-secondary">Edit</button>
-          <button class="btn-secondary">Delete</button>
-        </td>
-      `;
-
-      coursesTableBody.appendChild(newRow);
-      courseForm.reset();
-      updateCourseCount();
+      resetCourseForm();
+      renderCourses();
     });
+
+    addCourseScrollBtn.addEventListener('click', () => {
+      courseForm.scrollIntoView({ behavior: 'smooth' });
+      courseTitleInput.focus();
+    });
+
+    // ===== TESTS FRONTEND LOGIC =====
+    const testsTableBody = document.querySelector('#testsTable tbody');
+    const testForm = document.getElementById('testForm');
+    const statTests = document.getElementById('stat-tests');
+    const testNameInput = document.getElementById('testName');
+    const testCourseInput = document.getElementById('testCourse');
+    const testQuestionsInput = document.getElementById('testQuestions');
+    const testDurationInput = document.getElementById('testDuration');
+    const testStatusInput = document.getElementById('testStatus');
+    const testSubmitBtn = document.getElementById('testSubmitBtn');
+    const testCancelEditBtn = document.getElementById('testCancelEditBtn');
+    const addTestScrollBtn = document.getElementById('addTestScrollBtn');
+
+    let editingTestId = null;
+
+    function renderTests() {
+      testsTableBody.innerHTML = '';
+      tests.forEach((t, index) => {
+        const tr = document.createElement('tr');
+        const badgeClass = t.status === 'free' ? 'badge-free' : 'badge-paid';
+        const badgeText = t.status === 'free' ? 'Free' : 'Premium';
+        tr.innerHTML = `
+          <td>${index + 1}</td>
+          <td>${t.name}</td>
+          <td>${t.course || '-'}</td>
+          <td>${t.questions || '-'}</td>
+          <td>${t.duration || '-'}</td>
+          <td><span class="badge ${badgeClass}">${badgeText}</span></td>
+          <td>
+            <button class="btn-secondary" data-action="edit-test" data-id="${t.id}">Edit</button>
+            <button class="btn-secondary" data-action="delete-test" data-id="${t.id}">Delete</button>
+          </td>
+        `;
+        testsTableBody.appendChild(tr);
+      });
+      statTests.textContent = tests.length.toString();
+    }
+
+    testsTableBody.addEventListener('click', (e) => {
+      const btn = e.target;
+      if (!(btn instanceof HTMLElement)) return;
+      const action = btn.getAttribute('data-action');
+      const id = btn.getAttribute('data-id');
+      if (!action || !id) return;
+      const testId = parseInt(id, 10);
+
+      if (action === 'delete-test') {
+        if (confirm('Delete this test?')) {
+          tests = tests.filter((t) => t.id !== testId);
+          if (editingTestId === testId) {
+            resetTestForm();
+          }
+          renderTests();
+        }
+      } else if (action === 'edit-test') {
+        const t = tests.find((x) => x.id === testId);
+        if (!t) return;
+        editingTestId = t.id;
+        testNameInput.value = t.name;
+        testCourseInput.value = t.course || '';
+        testQuestionsInput.value = t.questions || '';
+        testDurationInput.value = t.duration || '';
+        testStatusInput.value = t.status;
+        testSubmitBtn.textContent = 'Update test';
+        testCancelEditBtn.style.display = 'inline-flex';
+        testForm.scrollIntoView({ behavior: 'smooth' });
+        testNameInput.focus();
+      }
+    });
+
+    function resetTestForm() {
+      editingTestId = null;
+      testForm.reset();
+      testSubmitBtn.textContent = 'Save test';
+      testCancelEditBtn.style.display = 'none';
+    }
+
+    testCancelEditBtn.addEventListener('click', resetTestForm);
+
+    testForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = testNameInput.value.trim();
+      if (!name) return;
+
+      const course = testCourseInput.value.trim();
+      const questions = testQuestionsInput.value ? Number(testQuestionsInput.value) : null;
+      const duration = testDurationInput.value.trim();
+      const status = testStatusInput.value;
+
+      if (editingTestId) {
+        tests = tests.map((t) =>
+          t.id === editingTestId
+            ? { ...t, name, course, questions, duration, status }
+            : t
+        );
+      } else {
+        const newId = (tests[tests.length - 1]?.id || 0) + 1;
+        tests.push({
+          id: newId,
+          name,
+          course,
+          questions,
+          duration,
+          status
+        });
+      }
+
+      resetTestForm();
+      renderTests();
+    });
+
+    addTestScrollBtn.addEventListener('click', () => {
+      testForm.scrollIntoView({ behavior: 'smooth' });
+      testNameInput.focus();
+    });
+
+    // ===== UPDATES FRONTEND LOGIC =====
+    const updatesTableBody = document.querySelector('#updatesTable tbody');
+    const updateForm = document.getElementById('updateForm');
+    const statUpdates = document.getElementById('stat-updates');
+    const updateTitleInput = document.getElementById('updateTitle');
+    const updateAudienceInput = document.getElementById('updateAudience');
+    const updateBodyInput = document.getElementById('updateBody');
+    const updateSubmitBtn = document.getElementById('updateSubmitBtn');
+    const updateCancelEditBtn = document.getElementById('updateCancelEditBtn');
+    const addUpdateScrollBtn = document.getElementById('addUpdateScrollBtn');
+
+    let editingUpdateId = null;
+
+    function renderUpdates() {
+      updatesTableBody.innerHTML = '';
+      updates.forEach((u, index) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${index + 1}</td>
+          <td>
+            <strong>${u.title}</strong><br/>
+            <span style="font-size:11px;color:#6b7280;">${u.body || ''}</span>
+          </td>
+          <td>${u.audience || 'All'}</td>
+          <td>${u.createdAt || '-'}</td>
+          <td>
+            <button class="btn-secondary" data-action="edit-update" data-id="${u.id}">Edit</button>
+            <button class="btn-secondary" data-action="delete-update" data-id="${u.id}">Delete</button>
+          </td>
+        `;
+        updatesTableBody.appendChild(tr);
+      });
+      statUpdates.textContent = updates.length.toString();
+    }
+
+    updatesTableBody.addEventListener('click', (e) => {
+      const btn = e.target;
+      if (!(btn instanceof HTMLElement)) return;
+      const action = btn.getAttribute('data-action');
+      const id = btn.getAttribute('data-id');
+      if (!action || !id) return;
+      const updateId = parseInt(id, 10);
+
+      if (action === 'delete-update') {
+        if (confirm('Delete this update?')) {
+          updates = updates.filter((u) => u.id !== updateId);
+          if (editingUpdateId === updateId) {
+            resetUpdateForm();
+          }
+          renderUpdates();
+        }
+      } else if (action === 'edit-update') {
+        const u = updates.find((x) => x.id === updateId);
+        if (!u) return;
+        editingUpdateId = u.id;
+        updateTitleInput.value = u.title;
+        updateAudienceInput.value = u.audience || '';
+        updateBodyInput.value = u.body || '';
+        updateSubmitBtn.textContent = 'Update update';
+        updateCancelEditBtn.style.display = 'inline-flex';
+        updateForm.scrollIntoView({ behavior: 'smooth' });
+        updateTitleInput.focus();
+      }
+    });
+
+    function resetUpdateForm() {
+      editingUpdateId = null;
+      updateForm.reset();
+      updateSubmitBtn.textContent = 'Save update';
+      updateCancelEditBtn.style.display = 'none';
+    }
+
+    updateCancelEditBtn.addEventListener('click', resetUpdateForm);
+
+    updateForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const title = updateTitleInput.value.trim();
+      if (!title) return;
+
+      const audience = updateAudienceInput.value.trim();
+      const body = updateBodyInput.value.trim();
+      const createdAt = new Date().toLocaleDateString('en-IN', {
+        day: '2-digit',
+        month: 'short'
+      });
+
+      if (editingUpdateId) {
+        updates = updates.map((u) =>
+          u.id === editingUpdateId
+            ? { ...u, title, audience, body }
+            : u
+        );
+      } else {
+        const newId = (updates[updates.length - 1]?.id || 0) + 1;
+        updates.push({
+          id: newId,
+          title,
+          audience,
+          body,
+          createdAt
+        });
+      }
+
+      resetUpdateForm();
+      renderUpdates();
+    });
+
+    addUpdateScrollBtn.addEventListener('click', () => {
+      updateForm.scrollIntoView({ behavior: 'smooth' });
+      updateTitleInput.focus();
+    });
+
+    // ===== INITIAL RENDER =====
+    renderCourses();
+    renderTests();
+    renderUpdates();
   </script>
 </body>
 </html>
