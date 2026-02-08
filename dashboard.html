@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -180,6 +179,8 @@
       align-items: center;
       justify-content: space-between;
       margin-bottom: 16px;
+      gap: 10px;
+      flex-wrap: wrap;
     }
 
     .section-title {
@@ -242,6 +243,35 @@
       margin-top: 4px;
     }
 
+    /* Section toolbar (search + filters) */
+    .section-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .toolbar-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .toolbar-input {
+      border-radius: 999px;
+      border: 1px solid #e5e7eb;
+      padding: 7px 10px;
+      font-size: 13px;
+      background: #ffffff;
+      min-width: 160px;
+    }
+
+    .toolbar-input::placeholder {
+      color: #9ca3af;
+    }
+
     /* Table */
     table {
       width: 100%;
@@ -272,6 +302,10 @@
 
     tr:last-child td {
       border-bottom: none;
+    }
+
+    tbody tr:hover {
+      background: #f9fafb;
     }
 
     .badge {
@@ -372,6 +406,15 @@
         flex-direction: column;
         align-items: stretch;
       }
+
+      .section-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .toolbar-input {
+        width: 100%;
+      }
     }
   </style>
 </head>
@@ -470,6 +513,23 @@
           <button class="btn-primary" id="addCourseScrollBtn">+ Add new course</button>
         </div>
 
+        <!-- NEW: Courses search + filter -->
+        <div class="section-toolbar">
+          <div class="toolbar-group">
+            <input
+              type="text"
+              id="courseSearch"
+              class="toolbar-input"
+              placeholder="Search courses..."
+            />
+            <select id="courseFilterType" class="toolbar-input">
+              <option value="all">All types</option>
+              <option value="free">Free</option>
+              <option value="paid">Paid</option>
+            </select>
+          </div>
+        </div>
+
         <table id="coursesTable">
           <thead>
             <tr>
@@ -521,6 +581,23 @@
         <div class="section-header">
           <h2 class="section-title">Tests</h2>
           <button class="btn-primary" id="addTestScrollBtn">+ Add new test</button>
+        </div>
+
+        <!-- NEW: Tests search + filter -->
+        <div class="section-toolbar">
+          <div class="toolbar-group">
+            <input
+              type="text"
+              id="testSearch"
+              class="toolbar-input"
+              placeholder="Search tests..."
+            />
+            <select id="testFilterStatus" class="toolbar-input">
+              <option value="all">All types</option>
+              <option value="free">Free</option>
+              <option value="premium">Premium</option>
+            </select>
+          </div>
         </div>
 
         <table id="testsTable">
@@ -576,6 +653,18 @@
           <button class="btn-primary" id="addUpdateScrollBtn">+ Add new update</button>
         </div>
 
+        <!-- NEW: Updates search -->
+        <div class="section-toolbar">
+          <div class="toolbar-group">
+            <input
+              type="text"
+              id="updateSearch"
+              class="toolbar-input"
+              placeholder="Search updates..."
+            />
+          </div>
+        </div>
+
         <table id="updatesTable">
           <thead>
             <tr>
@@ -628,13 +717,13 @@
 
   <script>
     // 🔐 Firebase config (same as index.html)
-const firebaseConfig = {
-  apiKey: "AIzaSyBnDo5VJiM2noDWRWk281aVaUfPZ-sX08A",
-  authDomain: "papi0009.firebaseapp.com",
-  projectId: "papi0009",
-  storageBucket: "papi0009.firebasestorage.app",
-  messagingSenderId: "598318485319",
-  appId: "1:598318485319:web:b26e84907d49a92d42c662",
+    const firebaseConfig = {
+      apiKey: "AIzaSyBnDo5VJiM2noDWRWk281aVaUfPZ-sX08A",
+      authDomain: "papi0009.firebaseapp.com",
+      projectId: "papi0009",
+      storageBucket: "papi0009.firebasestorage.app",
+      messagingSenderId: "598318485319",
+      appId: "1:598318485319:web:b26e84907d49a92d42c662",
     };
 
     firebase.initializeApp(firebaseConfig);
@@ -755,33 +844,64 @@ const firebaseConfig = {
     const courseCancelEditBtn = document.getElementById('courseCancelEditBtn');
     const addCourseScrollBtn = document.getElementById('addCourseScrollBtn');
 
+    const courseSearchInput = document.getElementById('courseSearch');
+    const courseFilterTypeSelect = document.getElementById('courseFilterType');
+
     let editingCourseId = null;
+    let courseSearchTerm = '';
+    let courseFilterType = 'all';
 
     function renderCourses() {
       coursesTableBody.innerHTML = '';
-      courses.forEach((course, index) => {
+
+      const filtered = courses.filter((course) => {
+        const term = courseSearchTerm;
+        const matchesSearch =
+          !term ||
+          course.title.toLowerCase().includes(term) ||
+          (course.subtitle && course.subtitle.toLowerCase().includes(term));
+
+        const matchesType =
+          courseFilterType === 'all' || course.type === courseFilterType;
+
+        return matchesSearch && matchesType;
+      });
+
+      if (filtered.length === 0) {
         const tr = document.createElement('tr');
-        const isFree = course.type === 'free';
         tr.innerHTML = `
-          <td>${index + 1}</td>
-          <td>
-            <strong>${course.title}</strong><br/>
-            <span style="font-size:11px;color:#6b7280;">${course.subtitle || ''}</span>
-          </td>
-          <td>${course.level || '-'}</td>
-          <td>
-            <span class="badge ${isFree ? 'badge-free' : 'badge-paid'}">
-              ${isFree ? 'Free' : 'Paid'}
-            </span>
-          </td>
-          <td>₹${course.price || 0}</td>
-          <td>
-            <button class="btn-secondary" data-action="edit" data-id="${course.id}">Edit</button>
-            <button class="btn-secondary" data-action="delete" data-id="${course.id}">Delete</button>
+          <td colspan="6" style="text-align:center;color:#9ca3af;font-size:12px;padding:16px;">
+            No courses found. Try changing search/filter.
           </td>
         `;
         coursesTableBody.appendChild(tr);
-      });
+      } else {
+        filtered.forEach((course, index) => {
+          const tr = document.createElement('tr');
+          const isFree = course.type === 'free';
+          tr.innerHTML = `
+            <td>${index + 1}</td>
+            <td>
+              <strong>${course.title}</strong><br/>
+              <span style="font-size:11px;color:#6b7280;">${course.subtitle || ''}</span>
+            </td>
+            <td>${course.level || '-'}</td>
+            <td>
+              <span class="badge ${isFree ? 'badge-free' : 'badge-paid'}">
+                ${isFree ? 'Free' : 'Paid'}
+              </span>
+            </td>
+            <td>₹${course.price || 0}</td>
+            <td>
+              <button class="btn-secondary" data-action="edit" data-id="${course.id}">Edit</button>
+              <button class="btn-secondary" data-action="delete" data-id="${course.id}">Delete</button>
+            </td>
+          `;
+          coursesTableBody.appendChild(tr);
+        });
+      }
+
+      // stats total = actual courses count (not filtered)
       statCourses.textContent = courses.length.toString();
     }
 
@@ -863,6 +983,16 @@ const firebaseConfig = {
       courseTitleInput.focus();
     });
 
+    courseSearchInput.addEventListener('input', (e) => {
+      courseSearchTerm = e.target.value.toLowerCase();
+      renderCourses();
+    });
+
+    courseFilterTypeSelect.addEventListener('change', (e) => {
+      courseFilterType = e.target.value;
+      renderCourses();
+    });
+
     // ===== TESTS FRONTEND LOGIC =====
     const testsTableBody = document.querySelector('#testsTable tbody');
     const testForm = document.getElementById('testForm');
@@ -876,28 +1006,58 @@ const firebaseConfig = {
     const testCancelEditBtn = document.getElementById('testCancelEditBtn');
     const addTestScrollBtn = document.getElementById('addTestScrollBtn');
 
+    const testSearchInput = document.getElementById('testSearch');
+    const testFilterStatusSelect = document.getElementById('testFilterStatus');
+
     let editingTestId = null;
+    let testSearchTerm = '';
+    let testFilterStatus = 'all';
 
     function renderTests() {
       testsTableBody.innerHTML = '';
-      tests.forEach((t, index) => {
+
+      const filtered = tests.filter((t) => {
+        const term = testSearchTerm;
+        const matchesSearch =
+          !term ||
+          t.name.toLowerCase().includes(term) ||
+          (t.course && t.course.toLowerCase().includes(term));
+
+        const matchesStatus =
+          testFilterStatus === 'all' || t.status === testFilterStatus;
+
+        return matchesSearch && matchesStatus;
+      });
+
+      if (filtered.length === 0) {
         const tr = document.createElement('tr');
-        const badgeClass = t.status === 'free' ? 'badge-free' : 'badge-paid';
-        const badgeText = t.status === 'free' ? 'Free' : 'Premium';
         tr.innerHTML = `
-          <td>${index + 1}</td>
-          <td>${t.name}</td>
-          <td>${t.course || '-'}</td>
-          <td>${t.questions || '-'}</td>
-          <td>${t.duration || '-'}</td>
-          <td><span class="badge ${badgeClass}">${badgeText}</span></td>
-          <td>
-            <button class="btn-secondary" data-action="edit-test" data-id="${t.id}">Edit</button>
-            <button class="btn-secondary" data-action="delete-test" data-id="${t.id}">Delete</button>
+          <td colspan="7" style="text-align:center;color:#9ca3af;font-size:12px;padding:16px;">
+            No tests found. Try changing search/filter.
           </td>
         `;
         testsTableBody.appendChild(tr);
-      });
+      } else {
+        filtered.forEach((t, index) => {
+          const tr = document.createElement('tr');
+          const badgeClass = t.status === 'free' ? 'badge-free' : 'badge-paid';
+          const badgeText = t.status === 'free' ? 'Free' : 'Premium';
+          tr.innerHTML = `
+            <td>${index + 1}</td>
+            <td>${t.name}</td>
+            <td>${t.course || '-'}</td>
+            <td>${t.questions || '-'}</td>
+            <td>${t.duration || '-'}</td>
+            <td><span class="badge ${badgeClass}">${badgeText}</span></td>
+            <td>
+              <button class="btn-secondary" data-action="edit-test" data-id="${t.id}">Edit</button>
+              <button class="btn-secondary" data-action="delete-test" data-id="${t.id}">Delete</button>
+            </td>
+          `;
+          testsTableBody.appendChild(tr);
+        });
+      }
+
       statTests.textContent = tests.length.toString();
     }
 
@@ -979,6 +1139,16 @@ const firebaseConfig = {
       testNameInput.focus();
     });
 
+    testSearchInput.addEventListener('input', (e) => {
+      testSearchTerm = e.target.value.toLowerCase();
+      renderTests();
+    });
+
+    testFilterStatusSelect.addEventListener('change', (e) => {
+      testFilterStatus = e.target.value;
+      renderTests();
+    });
+
     // ===== UPDATES FRONTEND LOGIC =====
     const updatesTableBody = document.querySelector('#updatesTable tbody');
     const updateForm = document.getElementById('updateForm');
@@ -990,27 +1160,51 @@ const firebaseConfig = {
     const updateCancelEditBtn = document.getElementById('updateCancelEditBtn');
     const addUpdateScrollBtn = document.getElementById('addUpdateScrollBtn');
 
+    const updateSearchInput = document.getElementById('updateSearch');
+
     let editingUpdateId = null;
+    let updateSearchTerm = '';
 
     function renderUpdates() {
       updatesTableBody.innerHTML = '';
-      updates.forEach((u, index) => {
+
+      const filtered = updates.filter((u) => {
+        const term = updateSearchTerm;
+        return (
+          !term ||
+          u.title.toLowerCase().includes(term) ||
+          (u.body && u.body.toLowerCase().includes(term))
+        );
+      });
+
+      if (filtered.length === 0) {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td>${index + 1}</td>
-          <td>
-            <strong>${u.title}</strong><br/>
-            <span style="font-size:11px;color:#6b7280;">${u.body || ''}</span>
-          </td>
-          <td>${u.audience || 'All'}</td>
-          <td>${u.createdAt || '-'}</td>
-          <td>
-            <button class="btn-secondary" data-action="edit-update" data-id="${u.id}">Edit</button>
-            <button class="btn-secondary" data-action="delete-update" data-id="${u.id}">Delete</button>
+          <td colspan="5" style="text-align:center;color:#9ca3af;font-size:12px;padding:16px;">
+            No updates found. Try changing search.
           </td>
         `;
         updatesTableBody.appendChild(tr);
-      });
+      } else {
+        filtered.forEach((u, index) => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${index + 1}</td>
+            <td>
+              <strong>${u.title}</strong><br/>
+              <span style="font-size:11px;color:#6b7280;">${u.body || ''}</span>
+            </td>
+            <td>${u.audience || 'All'}</td>
+            <td>${u.createdAt || '-'}</td>
+            <td>
+              <button class="btn-secondary" data-action="edit-update" data-id="${u.id}">Edit</button>
+              <button class="btn-secondary" data-action="delete-update" data-id="${u.id}">Delete</button>
+            </td>
+          `;
+          updatesTableBody.appendChild(tr);
+        });
+      }
+
       statUpdates.textContent = updates.length.toString();
     }
 
@@ -1089,6 +1283,11 @@ const firebaseConfig = {
     addUpdateScrollBtn.addEventListener('click', () => {
       updateForm.scrollIntoView({ behavior: 'smooth' });
       updateTitleInput.focus();
+    });
+
+    updateSearchInput.addEventListener('input', (e) => {
+      updateSearchTerm = e.target.value.toLowerCase();
+      renderUpdates();
     });
 
     // ===== INITIAL RENDER =====
