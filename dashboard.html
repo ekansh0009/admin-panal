@@ -513,7 +513,7 @@
           <button class="btn-primary" id="addCourseScrollBtn">+ Add new course</button>
         </div>
 
-        <!-- NEW: Courses search + filter -->
+        <!-- Courses search + filter -->
         <div class="section-toolbar">
           <div class="toolbar-group">
             <input
@@ -571,6 +571,34 @@
           </button>
         </form>
 
+        <!-- COURSE CONTENT PREVIEW (demo) -->
+        <h3 style="margin-top:18px; font-size:16px; font-weight:600;">Course content (preview)</h3>
+
+        <div class="inline-form" id="courseContentPreview">
+          <div class="inline-input">
+            <select id="courseContentCourseSelect">
+              <!-- JS se fill hoga -->
+            </select>
+          </div>
+          <div style="flex: 2 1 240px; min-width:0;">
+            <table style="width:100%; font-size:12px; border-collapse:collapse;">
+              <thead>
+                <tr style="background:#f9fafb;">
+                  <th style="padding:6px 8px; text-align:left;">#</th>
+                  <th style="padding:6px 8px; text-align:left;">Title</th>
+                  <th style="padding:6px 8px; text-align:left;">Type</th>
+                  <th style="padding:6px 8px; text-align:left;">Info</th>
+                </tr>
+              </thead>
+              <tbody id="courseContentTableBody">
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <p class="muted">
+          Yeh sirf preview hai. Baad me isko full editor (add/edit/delete bundle items) bana denge.
+        </p>
+
         <p class="muted">
           Course add/edit/delete abhi frontend pe hi ho raha hai. Baad me yahi data Firestore/DB me save karenge.
         </p>
@@ -583,7 +611,7 @@
           <button class="btn-primary" id="addTestScrollBtn">+ Add new test</button>
         </div>
 
-        <!-- NEW: Tests search + filter -->
+        <!-- Tests search + filter -->
         <div class="section-toolbar">
           <div class="toolbar-group">
             <input
@@ -641,6 +669,33 @@
           </button>
         </form>
 
+        <!-- TEST QUESTIONS PREVIEW (demo) -->
+        <h3 style="margin-top:18px; font-size:16px; font-weight:600;">Test questions (preview)</h3>
+
+        <div class="inline-form" id="testQuestionsPreview">
+          <div class="inline-input">
+            <select id="testContentSelect">
+              <!-- JS se fill -->
+            </select>
+          </div>
+          <div style="flex: 2 1 240px; min-width:0;">
+            <table style="width:100%; font-size:12px; border-collapse:collapse;">
+              <thead>
+                <tr style="background:#f9fafb;">
+                  <th style="padding:6px 8px; text-align:left;">#</th>
+                  <th style="padding:6px 8px; text-align:left;">Question</th>
+                  <th style="padding:6px 8px; text-align:left;">Options</th>
+                </tr>
+              </thead>
+              <tbody id="testQuestionsTableBody">
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <p class="muted">
+          Yeh preview hai. Baad me yahi se full question editor banayenge (MCQ add/edit/delete).
+        </p>
+
         <p class="muted">
           Yaha se tum mock tests/series manage kar paoge. Abhi ke liye ye data browser me hi stored hai.
         </p>
@@ -653,7 +708,7 @@
           <button class="btn-primary" id="addUpdateScrollBtn">+ Add new update</button>
         </div>
 
-        <!-- NEW: Updates search -->
+        <!-- Updates search -->
         <div class="section-toolbar">
           <div class="toolbar-group">
             <input
@@ -810,6 +865,83 @@
       }
     ];
 
+    // ===== COURSE CONTENT (per course) – dummy for now =====
+    let courseContents = {
+      1: [
+        {
+          id: 101,
+          order: 1,
+          type: "video",
+          title: "Kinematics – Lecture 1",
+          description: "Basics + graphs",
+          duration: "45 min"
+        },
+        {
+          id: 102,
+          order: 2,
+          type: "video",
+          title: "Kinematics – Lecture 2",
+          description: "Relative motion",
+          duration: "50 min"
+        },
+        {
+          id: 103,
+          order: 3,
+          type: "pdf",
+          title: "Kinematics Notes PDF",
+          description: "Revision notes"
+        },
+        {
+          id: 104,
+          order: 4,
+          type: "test",
+          title: "Kinematics Quiz",
+          description: "20 questions",
+          duration: "30 min"
+        }
+      ],
+      2: [
+        {
+          id: 201,
+          order: 1,
+          type: "video",
+          title: "Functions – Lecture 1",
+          duration: "40 min"
+        }
+      ]
+    };
+
+    // ===== TEST QUESTIONS (per test) – dummy for now =====
+    let testQuestions = {
+      1: [
+        {
+          id: 1,
+          text: "A particle moving with constant velocity has?",
+          options: [
+            "Zero acceleration",
+            "Constant acceleration",
+            "Variable velocity",
+            "Variable speed"
+          ],
+          correctIndex: 0
+        },
+        {
+          id: 2,
+          text: "Which of the following is a vector?",
+          options: ["Speed", "Distance", "Velocity", "Work"],
+          correctIndex: 2
+        }
+      ],
+      2: [
+        {
+          id: 1,
+          text: "Functional unit of kidney is?",
+          options: ["Neuron", "Nephron", "Neutrophil", "Neurilemma"],
+          correctIndex: 1
+        }
+      ]
+    };
+
     // ===== NAVIGATION =====
     const navLinks = document.querySelectorAll('.nav-link');
     const sections = document.querySelectorAll('.section');
@@ -846,6 +978,10 @@
 
     const courseSearchInput = document.getElementById('courseSearch');
     const courseFilterTypeSelect = document.getElementById('courseFilterType');
+
+    // Course content preview DOM
+    const courseContentCourseSelect = document.getElementById('courseContentCourseSelect');
+    const courseContentTableBody = document.getElementById('courseContentTableBody');
 
     let editingCourseId = null;
     let courseSearchTerm = '';
@@ -903,6 +1039,9 @@
 
       // stats total = actual courses count (not filtered)
       statCourses.textContent = courses.length.toString();
+
+      // refresh course content dropdown
+      refreshCourseContentCourseOptions();
     }
 
     coursesTableBody.addEventListener('click', (e) => {
@@ -993,6 +1132,69 @@
       renderCourses();
     });
 
+    // ===== COURSE CONTENT PREVIEW LOGIC =====
+    function refreshCourseContentCourseOptions() {
+      if (!courseContentCourseSelect) return;
+
+      // Courses array se dropdown options
+      courseContentCourseSelect.innerHTML = '';
+      courses.forEach((c) => {
+        const opt = document.createElement('option');
+        opt.value = String(c.id);
+        opt.textContent = `${c.title} (${c.id})`;
+        courseContentCourseSelect.appendChild(opt);
+      });
+
+      if (courses.length > 0) {
+        if (!courseContentCourseSelect.value) {
+          courseContentCourseSelect.value = String(courses[0].id);
+        }
+      }
+      renderCourseContentPreview();
+    }
+
+    function renderCourseContentPreview() {
+      if (!courseContentCourseSelect || !courseContentTableBody) return;
+
+      const selectedId = parseInt(courseContentCourseSelect.value || '0', 10);
+      const contentList = courseContents[selectedId] || [];
+
+      courseContentTableBody.innerHTML = '';
+
+      if (contentList.length === 0) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td colspan="4" style="padding:8px; text-align:center; color:#9ca3af;">
+            No content for this course yet.
+          </td>
+        `;
+        courseContentTableBody.appendChild(tr);
+      } else {
+        contentList
+          .slice()
+          .sort((a, b) => (a.order || 0) - (b.order || 0))
+          .forEach((item, index) => {
+            const tr = document.createElement('tr');
+            const typeLabel = item.type || '-';
+            const info = item.duration
+              ? item.duration
+              : (item.description || '');
+
+            tr.innerHTML = `
+              <td style="padding:6px 8px;">${index + 1}</td>
+              <td style="padding:6px 8px;">${item.title}</td>
+              <td style="padding:6px 8px; text-transform:capitalize;">${typeLabel}</td>
+              <td style="padding:6px 8px;">${info}</td>
+            `;
+            courseContentTableBody.appendChild(tr);
+          });
+      }
+    }
+
+    if (courseContentCourseSelect) {
+      courseContentCourseSelect.addEventListener('change', renderCourseContentPreview);
+    }
+
     // ===== TESTS FRONTEND LOGIC =====
     const testsTableBody = document.querySelector('#testsTable tbody');
     const testForm = document.getElementById('testForm');
@@ -1008,6 +1210,10 @@
 
     const testSearchInput = document.getElementById('testSearch');
     const testFilterStatusSelect = document.getElementById('testFilterStatus');
+
+    // Test questions preview DOM
+    const testContentSelect = document.getElementById('testContentSelect');
+    const testQuestionsTableBody = document.getElementById('testQuestionsTableBody');
 
     let editingTestId = null;
     let testSearchTerm = '';
@@ -1059,6 +1265,9 @@
       }
 
       statTests.textContent = tests.length.toString();
+
+      // refresh test questions dropdown
+      refreshTestSelectOptions();
     }
 
     testsTableBody.addEventListener('click', (e) => {
@@ -1148,6 +1357,57 @@
       testFilterStatus = e.target.value;
       renderTests();
     });
+
+    // ===== TEST QUESTIONS PREVIEW LOGIC =====
+    function refreshTestSelectOptions() {
+      if (!testContentSelect) return;
+
+      testContentSelect.innerHTML = '';
+      tests.forEach((t) => {
+        const opt = document.createElement('option');
+        opt.value = String(t.id);
+        opt.textContent = `${t.name} (${t.id})`;
+        testContentSelect.appendChild(opt);
+      });
+      if (tests.length > 0 && !testContentSelect.value) {
+        testContentSelect.value = String(tests[0].id);
+      }
+      renderTestQuestionsPreview();
+    }
+
+    function renderTestQuestionsPreview() {
+      if (!testContentSelect || !testQuestionsTableBody) return;
+
+      const selectedId = parseInt(testContentSelect.value || '0', 10);
+      const qList = testQuestions[selectedId] || [];
+
+      testQuestionsTableBody.innerHTML = '';
+
+      if (qList.length === 0) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td colspan="3" style="padding:8px; text-align:center; color:#9ca3af;">
+            No questions for this test yet.
+          </td>
+        `;
+        testQuestionsTableBody.appendChild(tr);
+      } else {
+        qList.forEach((q, index) => {
+          const optionsText = (q.options || []).join(', ');
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td style="padding:6px 8px;">${index + 1}</td>
+            <td style="padding:6px 8px;">${q.text}</td>
+            <td style="padding:6px 8px;">${optionsText}</td>
+          `;
+          testQuestionsTableBody.appendChild(tr);
+        });
+      }
+    }
+
+    if (testContentSelect) {
+      testContentSelect.addEventListener('change', renderTestQuestionsPreview);
+    }
 
     // ===== UPDATES FRONTEND LOGIC =====
     const updatesTableBody = document.querySelector('#updatesTable tbody');
