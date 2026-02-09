@@ -488,6 +488,31 @@
       color: #15803d;
     }
 
+    /* JSON toolbar for Course Content */
+    .cc-json-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .cc-json-output {
+      margin-top: 4px;
+      width: 100%;
+      min-height: 140px;
+      max-height: 260px;
+      border-radius: 10px;
+      border: 1px solid #e5e7eb;
+      padding: 8px 10px;
+      font-size: 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      background: #f9fafb;
+      resize: vertical;
+      white-space: pre;
+      overflow: auto;
+    }
+
     @media (max-width: 900px) {
       .sidebar {
         display: none;
@@ -700,6 +725,14 @@
             </div>
             <button class="btn-primary" id="ccAddSectionBtn">+ Add section</button>
           </div>
+
+          <!-- JSON toolbar -->
+          <div class="cc-json-toolbar">
+            <button class="btn-secondary" id="ccShowJsonBtn">Show JSON</button>
+            <button class="btn-secondary" id="ccCopyJsonBtn">Copy JSON</button>
+          </div>
+          <textarea id="ccJsonOutput" class="cc-json-output" readonly style="display:none;"></textarea>
+
           <div class="cc-sections-container" id="ccSectionsContainer"></div>
           <p class="muted">
             Ye structure app ke <code>CourseSection</code> / <code>CourseLesson</code> ke jaisa hai.
@@ -1143,6 +1176,9 @@
     const ccCourseTitleSpan = document.getElementById('ccCourseTitle');
     const ccSectionsContainer = document.getElementById('ccSectionsContainer');
     const ccAddSectionBtn = document.getElementById('ccAddSectionBtn');
+    const ccJsonOutput = document.getElementById('ccJsonOutput');
+    const ccShowJsonBtn = document.getElementById('ccShowJsonBtn');
+    const ccCopyJsonBtn = document.getElementById('ccCopyJsonBtn');
 
     // Structure: { [courseId]: [ { id, title, description, lessons: [ { id, title, type, durationLabel, isLocked, contentUrl } ] } ] }
     let courseContents = {};
@@ -1153,6 +1189,11 @@
       courseContentEditor.style.display = 'none';
       ccCourseTitleSpan.textContent = '';
       ccSectionsContainer.innerHTML = '';
+      if (ccJsonOutput) {
+        ccJsonOutput.value = '';
+        ccJsonOutput.style.display = 'none';
+        if (ccShowJsonBtn) ccShowJsonBtn.textContent = 'Show JSON';
+      }
     }
 
     function openCourseContentEditor(courseId) {
@@ -1172,6 +1213,42 @@
       courseContentEditor.scrollIntoView({ behavior: 'smooth' });
     }
 
+    function getCurrentCourseContentPayload() {
+      if (!currentContentCourseId) return null;
+      const course = courses.find((c) => c.id === currentContentCourseId);
+      if (!course) return null;
+
+      const sections = (courseContents[currentContentCourseId] || []).map((sec) => ({
+        id: sec.id,
+        title: sec.title,
+        description: sec.description,
+        lessons: (sec.lessons || []).map((lesson) => ({
+          id: lesson.id,
+          title: lesson.title,
+          type: lesson.type,
+          durationLabel: lesson.durationLabel,
+          contentUrl: lesson.contentUrl,
+          isLocked: !!lesson.isLocked
+        }))
+      }));
+
+      return {
+        courseId: course.id,
+        courseTitle: course.title,
+        sections
+      };
+    }
+
+    function updateJsonPreview() {
+      if (!ccJsonOutput) return;
+      const payload = getCurrentCourseContentPayload();
+      if (!payload) {
+        ccJsonOutput.value = '';
+        return;
+      }
+      ccJsonOutput.value = JSON.stringify(payload, null, 2);
+    }
+
     function renderCourseContent() {
       if (!currentContentCourseId) return;
       const sections = courseContents[currentContentCourseId] || [];
@@ -1183,6 +1260,7 @@
             (e.g. "Kinematics", "Vectors", "Introduction" etc.)
           </p>
         `;
+        updateJsonPreview();
         return;
       }
 
@@ -1209,6 +1287,7 @@
       });
 
       ccSectionsContainer.innerHTML = html;
+      updateJsonPreview();
     }
 
     function renderLessonsTable(sec) {
@@ -1376,6 +1455,38 @@
       }
 
       renderCourseContent();
+    }
+
+    // JSON buttons
+    if (ccShowJsonBtn) {
+      ccShowJsonBtn.addEventListener('click', () => {
+        if (!ccJsonOutput) return;
+        const isHidden = ccJsonOutput.style.display === 'none' || ccJsonOutput.style.display === '';
+        if (isHidden) {
+          updateJsonPreview();
+          ccJsonOutput.style.display = 'block';
+          ccShowJsonBtn.textContent = 'Hide JSON';
+        } else {
+          ccJsonOutput.style.display = 'none';
+          ccShowJsonBtn.textContent = 'Show JSON';
+        }
+      });
+    }
+
+    if (ccCopyJsonBtn) {
+      ccCopyJsonBtn.addEventListener('click', async () => {
+        if (!ccJsonOutput) return;
+        if (!ccJsonOutput.value) {
+          updateJsonPreview();
+        }
+        try {
+          await navigator.clipboard.writeText(ccJsonOutput.value || '');
+          alert('Course content JSON copied to clipboard!');
+        } catch (err) {
+          console.error(err);
+          alert('Copy failed. Aap manually bhi JSON select karke copy kar sakte ho.');
+        }
+      });
     }
 
     // ===== TESTS FRONTEND LOGIC =====
