@@ -745,7 +745,7 @@
         </p>
       </section>
 
-      <!-- Tests -->
+            <!-- Tests -->
       <section class="section" id="section-tests">
         <div class="section-header">
           <h2 class="section-title">Tests</h2>
@@ -778,7 +778,7 @@
               <th>Questions</th>
               <th>Duration</th>
               <th>Status</th>
-              <th style="width: 120px;">Actions</th>
+              <th style="width: 200px;">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -810,10 +810,31 @@
           </button>
         </form>
 
+        <!-- NEW: Test Content Editor -->
+        <div class="card" id="testContentEditor" style="display:none; margin-top:16px;">
+          <div class="cc-editor-header">
+            <div>
+              <div class="card-title">Test content</div>
+              <div class="cc-editor-subtitle">
+                Manage questions for: <strong id="tcTestTitle"></strong>
+              </div>
+            </div>
+            <button class="btn-primary" id="tcAddQuestionBtn">+ Add question</button>
+          </div>
+
+          <div class="cc-sections-container" id="tcQuestionsContainer"></div>
+
+          <p class="muted">
+            Yaha se har test ke liye MCQ questions banao (question, options, correct answer, marks).
+            Backend banate time isi structure ko JSON me Firestore/DB me save kar sakte ho.
+          </p>
+        </div>
+
         <p class="muted">
           Yaha se tum mock tests/series manage kar paoge. Abhi ke liye ye data browser me hi stored hai.
         </p>
       </section>
+
 
       <!-- Updates -->
       <section class="section" id="section-updates">
