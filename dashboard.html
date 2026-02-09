@@ -379,6 +379,115 @@
       color: #6b7280;
     }
 
+    /* ===== COURSE CONTENT EDITOR ===== */
+
+    #courseContentEditor {
+      margin-top: 16px;
+    }
+
+    .cc-editor-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .cc-editor-subtitle {
+      font-size: 12px;
+      color: #6b7280;
+    }
+
+    .cc-sections-container {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .cc-section-card {
+      border-radius: 12px;
+      border: 1px solid #e5e7eb;
+      padding: 10px 12px;
+      background: #f9fafb;
+    }
+
+    .cc-section-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .cc-section-title {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .cc-section-desc {
+      font-size: 12px;
+      color: #6b7280;
+      margin-top: 2px;
+    }
+
+    .cc-section-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .cc-lessons-wrapper {
+      margin-top: 6px;
+    }
+
+    .cc-lessons-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      background: #ffffff;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid #e5e7eb;
+    }
+
+    .cc-lessons-table th,
+    .cc-lessons-table td {
+      padding: 6px 8px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .cc-lessons-table th {
+      background: #f3f4f6;
+      font-weight: 600;
+      color: #6b7280;
+    }
+
+    .cc-lessons-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .cc-tag-lock {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 6px;
+      border-radius: 999px;
+      font-size: 10px;
+      background: #fee2e2;
+      color: #b91c1c;
+    }
+
+    .cc-tag-unlock {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 6px;
+      border-radius: 999px;
+      font-size: 10px;
+      background: #dcfce7;
+      color: #15803d;
+    }
+
     @media (max-width: 900px) {
       .sidebar {
         display: none;
@@ -413,6 +522,15 @@
       }
 
       .toolbar-input {
+        width: 100%;
+      }
+
+      .cc-section-header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .cc-section-actions {
         width: 100%;
       }
     }
@@ -460,7 +578,7 @@
     </ul>
 
     <div class="sidebar-footer">
-      © PAPI • v0.2<br />
+      © PAPI • v0.3<br />
       (Frontend complete, backend next)
     </div>
   </aside>
@@ -530,7 +648,6 @@
           </div>
         </div>
 
-        <!-- Courses table -->
         <table id="coursesTable">
           <thead>
             <tr>
@@ -539,14 +656,14 @@
               <th>Level</th>
               <th>Type</th>
               <th>Price</th>
-              <th>Sections</th>
-              <th style="width: 220px;">Actions</th>
+              <th style="width: 200px;">Actions</th>
             </tr>
           </thead>
-          <tbody></tbody>
+          <tbody>
+          </tbody>
         </table>
 
-        <!-- Course meta add / edit form -->
+        <!-- Inline add / edit form -->
         <form class="inline-form" id="courseForm">
           <div class="inline-input">
             <input type="text" id="courseTitle" placeholder="Course title" required />
@@ -572,107 +689,27 @@
           </button>
         </form>
 
-        <p class="muted">
-          Course meta (title / level / free-paid / price) yahi se manage hoga.
-          Niche ka panel <code>CourseSection</code> + <code>CourseLesson</code> ke liye hai.
-        </p>
-
-        <!-- Course content editor (sections + lessons) -->
-        <div class="card" style="margin-top:16px;">
-          <div class="section-header" style="margin-bottom:8px;">
-            <h3 class="section-title" style="font-size:16px;">Content for selected course</h3>
+        <!-- NEW: Course Content Editor -->
+        <div class="card" id="courseContentEditor" style="display:none;">
+          <div class="cc-editor-header">
+            <div>
+              <div class="card-title">Course content</div>
+              <div class="cc-editor-subtitle">
+                Manage sections & lessons for: <strong id="ccCourseTitle"></strong>
+              </div>
+            </div>
+            <button class="btn-primary" id="ccAddSectionBtn">+ Add section</button>
           </div>
-
-          <p class="muted" id="courseContentHint">
-            Koi course select nahi hai. Table me "Edit content" button pe click karo.
-          </p>
-
-          <!-- Sections table -->
-          <table id="sectionsTable" style="margin-top:8px; display:none;">
-            <thead>
-              <tr>
-                <th style="width:50px;">#</th>
-                <th>Section title</th>
-                <th style="width:120px;">Lessons</th>
-                <th style="width:160px;">Actions</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-
-          <!-- Section form -->
-          <form class="inline-form" id="sectionForm" style="margin-top:12px; display:none;">
-            <div class="inline-input" style="flex:2 1 200px;">
-              <input type="text" id="sectionTitle" placeholder="Section title (e.g. Kinematics basics)" required />
-            </div>
-            <div class="inline-input" style="flex:3 1 260px;">
-              <input type="text" id="sectionDescription" placeholder="Short description (optional)" />
-            </div>
-            <button type="submit" class="btn-primary" id="sectionSubmitBtn">Save section</button>
-            <button type="button" class="btn-secondary" id="sectionCancelEditBtn" style="display:none;">
-              Cancel edit
-            </button>
-          </form>
-
-          <hr style="border:none;border-top:1px solid #e5e7eb;margin:16px 0;" />
-
-          <!-- Lessons for selected section -->
-          <h4 style="font-size:15px; font-weight:700; margin-bottom:4px;">
-            Lessons in selected section
-          </h4>
-          <p class="muted" id="lessonPanelHint">
-            Koi section select nahi hai. Upar wali list me "Edit lessons" pe click karo.
-          </p>
-
-          <table id="lessonsTable" style="margin-top:8px; display:none;">
-            <thead>
-              <tr>
-                <th style="width:50px;">#</th>
-                <th>Lesson title</th>
-                <th style="width:110px;">Type</th>
-                <th style="width:80px;">Locked?</th>
-                <th style="width:140px;">Actions</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-
-          <form class="inline-form" id="lessonForm" style="margin-top:12px; display:none;">
-            <div class="inline-input" style="flex:2 1 220px;">
-              <input type="text" id="lessonTitle" placeholder="Lesson title" required />
-            </div>
-            <div class="inline-input">
-              <select id="lessonType">
-                <option value="video">Video</option>
-                <option value="pdf">PDF</option>
-                <option value="notes">Notes</option>
-                <option value="quiz">Quiz</option>
-              </select>
-            </div>
-            <div class="inline-input">
-              <input
-                type="text"
-                id="lessonDurationLabel"
-                placeholder="Duration label (e.g. 12 min)"
-              />
-            </div>
-            <div class="inline-input">
-              <select id="lessonIsLocked">
-                <option value="false">Free in this course</option>
-                <option value="true">Locked (premium)</option>
-              </select>
-            </div>
-            <button type="submit" class="btn-primary" id="lessonSubmitBtn">Save lesson</button>
-            <button type="button" class="btn-secondary" id="lessonCancelEditBtn" style="display:none;">
-              Cancel edit
-            </button>
-          </form>
-
-          <p class="muted" style="margin-top:8px;">
-            Yehi sections/lessons app me <code>CourseSection</code> and <code>CourseLesson</code>
-            banne wale hain. Backend ke time sirf is structure ko Firestore/DB me save karna hoga.
+          <div class="cc-sections-container" id="ccSectionsContainer"></div>
+          <p class="muted">
+            Ye structure app ke <code>CourseSection</code> / <code>CourseLesson</code> ke jaisa hai.
+            Backend banate time isi ko JSON me save/load karna hai.
           </p>
         </div>
+
+        <p class="muted">
+          Course add/edit/delete abhi frontend pe hi ho raha hai. Baad me yahi data Firestore/DB me save karenge.
+        </p>
       </section>
 
       <!-- Tests -->
@@ -699,7 +736,6 @@
           </div>
         </div>
 
-        <!-- Tests table -->
         <table id="testsTable">
           <thead>
             <tr>
@@ -709,13 +745,13 @@
               <th>Questions</th>
               <th>Duration</th>
               <th>Status</th>
-              <th style="width: 200px;">Actions</th>
+              <th style="width: 120px;">Actions</th>
             </tr>
           </thead>
-          <tbody></tbody>
+          <tbody>
+          </tbody>
         </table>
 
-        <!-- Test meta form -->
         <form class="inline-form" id="testForm">
           <div class="inline-input">
             <input type="text" id="testName" placeholder="Test title" required />
@@ -724,7 +760,10 @@
             <input type="text" id="testCourse" placeholder="Belongs to course" />
           </div>
           <div class="inline-input">
-            <input type="number" id="testDurationMinutes" placeholder="Duration (minutes)" min="1" />
+            <input type="number" id="testQuestions" placeholder="Questions" min="1" />
+          </div>
+          <div class="inline-input">
+            <input type="text" id="testDuration" placeholder="Duration (e.g. 60 min)" />
           </div>
           <div class="inline-input">
             <select id="testStatus">
@@ -739,69 +778,8 @@
         </form>
 
         <p class="muted">
-          Yaha ka test structure future me app ke <code>TestPaper</code> model se match karega
-          (id, title, courseName, durationMinutes, questions...).
+          Yaha se tum mock tests/series manage kar paoge. Abhi ke liye ye data browser me hi stored hai.
         </p>
-
-        <!-- Question editor panel -->
-        <div class="card" style="margin-top:16px;">
-          <div class="section-header" style="margin-bottom:8px;">
-            <h3 class="section-title" style="font-size:16px;">Questions for selected test</h3>
-          </div>
-
-          <p class="muted" id="questionPanelHint">
-            Koi test select nahi hai. "Edit questions" button pe click karo.
-          </p>
-
-          <!-- Questions list -->
-          <table id="questionsTable" style="margin-top:8px; display:none;">
-            <thead>
-              <tr>
-                <th style="width:50px;">#</th>
-                <th>Question</th>
-                <th style="width:120px;">Correct</th>
-                <th style="width:120px;">Actions</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-
-          <!-- Question form -->
-          <form class="inline-form" id="questionForm" style="margin-top:12px; display:none;">
-            <div class="inline-input" style="flex:1 1 100%;">
-              <textarea id="qText" rows="2" placeholder="Question text" required></textarea>
-            </div>
-            <div class="inline-input">
-              <input type="text" id="optA" placeholder="Option A" required />
-            </div>
-            <div class="inline-input">
-              <input type="text" id="optB" placeholder="Option B" required />
-            </div>
-            <div class="inline-input">
-              <input type="text" id="optC" placeholder="Option C" required />
-            </div>
-            <div class="inline-input">
-              <input type="text" id="optD" placeholder="Option D" required />
-            </div>
-            <div class="inline-input">
-              <select id="correctOpt">
-                <option value="0">Correct: A</option>
-                <option value="1">Correct: B</option>
-                <option value="2">Correct: C</option>
-                <option value="3">Correct: D</option>
-              </select>
-            </div>
-            <button type="submit" class="btn-primary" id="questionSubmitBtn">Save question</button>
-            <button type="button" class="btn-secondary" id="questionCancelEditBtn" style="display:none;">
-              Cancel edit
-            </button>
-          </form>
-
-          <p class="muted" style="margin-top:8px;">
-            Yehi questions baad me app me <code>TestQuestion</code> + <code>TestQuestionOption</code> ke
-            form me jayenge. Backend aane par sirf API / Firestore code likhna padega.
-          </p>
-        </div>
       </section>
 
       <!-- Updates -->
@@ -833,7 +811,8 @@
               <th style="width: 120px;">Actions</th>
             </tr>
           </thead>
-          <tbody></tbody>
+          <tbody>
+          </tbody>
         </table>
 
         <form class="inline-form" id="updateForm">
@@ -911,7 +890,7 @@
       window.location.href = 'index.html';
     });
 
-    // ===== COURSES DATA (with sections + lessons) =====
+    // ===== FRONTEND STATE (dummy data for now) =====
     let courses = [
       {
         id: 1,
@@ -919,51 +898,7 @@
         level: "Class 11",
         type: "free",
         price: 0,
-        subtitle: "Mechanics fast revision",
-        sections: [
-          {
-            id: "s1",
-            title: "Kinematics basics",
-            description: "Introduction to motion in one dimension.",
-            lessons: [
-              {
-                id: "l1",
-                title: "Introduction & course overview",
-                type: "video",
-                durationLabel: "10 min",
-                isLocked: false
-              },
-              {
-                id: "l2",
-                title: "Kinematics formula sheet (PDF)",
-                type: "pdf",
-                durationLabel: "",
-                isLocked: false
-              }
-            ]
-          },
-          {
-            id: "s2",
-            title: "Laws of Motion",
-            description: "",
-            lessons: [
-              {
-                id: "l3",
-                title: "Newton's laws – concept lecture",
-                type: "video",
-                durationLabel: "35 min",
-                isLocked: false
-              },
-              {
-                id: "l4",
-                title: "Practice questions (quiz)",
-                type: "quiz",
-                durationLabel: "15 min",
-                isLocked: false
-              }
-            ]
-          }
-        ]
+        subtitle: "Mechanics fast revision"
       },
       {
         id: 2,
@@ -971,82 +906,29 @@
         level: "Class 12",
         type: "paid",
         price: 999,
-        subtitle: "Boards + JEE focused",
-        sections: [
-          {
-            id: "m1",
-            title: "Functions & Graphs",
-            description: "",
-            lessons: [
-              {
-                id: "m1l1",
-                title: "Basics of functions",
-                type: "video",
-                durationLabel: "25 min",
-                isLocked: false
-              }
-            ]
-          }
-        ]
+        subtitle: "Boards + JEE focused"
       }
     ];
 
-    // ===== TESTS DATA (with questions) =====
     let tests = [
       {
         id: 1,
-        title: "JEE Mock Test 01",
-        courseName: "Physics Crash Course",
-        durationMinutes: 60,
-        status: "free",
-        questions: [
-          {
-            id: "q1",
-            text: "A body moves with constant acceleration. Which graph is linear?",
-            options: [
-              { id: "A", text: "Displacement vs time" },
-              { id: "B", text: "Velocity vs time" },
-              { id: "C", text: "Acceleration vs time" },
-              { id: "D", text: "Velocity vs displacement" }
-            ],
-            correctOptionIndex: 1
-          },
-          {
-            id: "q2",
-            text: "For a projectile, which quantity remains constant (no air resistance)?",
-            options: [
-              { id: "A", text: "Horizontal component of velocity" },
-              { id: "B", text: "Vertical component of velocity" },
-              { id: "C", text: "Resultant velocity" },
-              { id: "D", text: "Kinetic energy" }
-            ],
-            correctOptionIndex: 0
-          }
-        ]
+        name: "JEE Mock Test 01",
+        course: "Physics Crash Course",
+        questions: 25,
+        duration: "60 min",
+        status: "free"
       },
       {
         id: 2,
-        title: "NEET Full Syllabus Test",
-        courseName: "Complete Biology",
-        durationMinutes: 180,
-        status: "premium",
-        questions: [
-          {
-            id: "n1",
-            text: "Which is NOT a function of root system?",
-            options: [
-              { id: "A", text: "Absorption of water" },
-              { id: "B", text: "Anchorage to the plant" },
-              { id: "C", text: "Photosynthesis" },
-              { id: "D", text: "Storage of food" }
-            ],
-            correctOptionIndex: 2
-          }
-        ]
+        name: "NEET Practice Set",
+        course: "Complete Biology",
+        questions: 50,
+        duration: "90 min",
+        status: "premium"
       }
     ];
 
-    // ===== UPDATES DATA =====
     let updates = [
       {
         id: 1,
@@ -1105,38 +987,6 @@
     let courseSearchTerm = '';
     let courseFilterType = 'all';
 
-    // Content editor DOM
-    const courseContentHint = document.getElementById('courseContentHint');
-    const sectionsTable = document.getElementById('sectionsTable');
-    const sectionsTableBody = sectionsTable.querySelector('tbody');
-    const sectionForm = document.getElementById('sectionForm');
-    const sectionTitleInput = document.getElementById('sectionTitle');
-    const sectionDescriptionInput = document.getElementById('sectionDescription');
-    const sectionSubmitBtn = document.getElementById('sectionSubmitBtn');
-    const sectionCancelEditBtn = document.getElementById('sectionCancelEditBtn');
-
-    const lessonPanelHint = document.getElementById('lessonPanelHint');
-    const lessonsTable = document.getElementById('lessonsTable');
-    const lessonsTableBody = lessonsTable.querySelector('tbody');
-    const lessonForm = document.getElementById('lessonForm');
-    const lessonTitleInput = document.getElementById('lessonTitle');
-    const lessonTypeSelect = document.getElementById('lessonType');
-    const lessonDurationInput = document.getElementById('lessonDurationLabel');
-    const lessonIsLockedSelect = document.getElementById('lessonIsLocked');
-    const lessonSubmitBtn = document.getElementById('lessonSubmitBtn');
-    const lessonCancelEditBtn = document.getElementById('lessonCancelEditBtn');
-
-    let selectedCourseIdForContent = null;
-    let editingSectionIndex = null;
-    let selectedSectionIndexForLessons = null;
-    let editingLessonIndex = null;
-
-    function ensureCourseSectionsArray(course) {
-      if (!course.sections) {
-        course.sections = [];
-      }
-    }
-
     function renderCourses() {
       coursesTableBody.innerHTML = '';
 
@@ -1156,57 +1006,40 @@
       if (filtered.length === 0) {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td colspan="7" style="text-align:center;color:#9ca3af;font-size:12px;padding:16px;">
+          <td colspan="6" style="text-align:center;color:#9ca3af;font-size:12px;padding:16px;">
             No courses found. Try changing search/filter.
           </td>
         `;
         coursesTableBody.appendChild(tr);
       } else {
         filtered.forEach((course, index) => {
-          ensureCourseSectionsArray(course);
-          const isFree = course.type === 'free';
-          const sectionCount = course.sections.length;
-
           const tr = document.createElement('tr');
+          const isFree = course.type === 'free';
           tr.innerHTML = `
             <td>${index + 1}</td>
             <td>
-              <strong>${course.title}</strong><br/>
-              <span style="font-size:11px;color:#6b7280;">${course.subtitle || ''}</span>
+              <strong>${escapeHtml(course.title)}</strong><br/>
+              <span style="font-size:11px;color:#6b7280;">${escapeHtml(course.subtitle || '')}</span>
             </td>
-            <td>${course.level || '-'}</td>
+            <td>${escapeHtml(course.level || '-')}</td>
             <td>
               <span class="badge ${isFree ? 'badge-free' : 'badge-paid'}">
                 ${isFree ? 'Free' : 'Paid'}
               </span>
             </td>
             <td>₹${course.price || 0}</td>
-            <td>${sectionCount}</td>
             <td>
-              <button class="btn-secondary" data-action="edit-course" data-id="${course.id}">Edit meta</button>
-              <button class="btn-secondary" data-action="edit-content" data-id="${course.id}">Edit content</button>
-              <button class="btn-secondary" data-action="delete-course" data-id="${course.id}">Delete</button>
+              <button class="btn-secondary" data-action="content" data-id="${course.id}">Content</button>
+              <button class="btn-secondary" data-action="edit" data-id="${course.id}">Edit</button>
+              <button class="btn-secondary" data-action="delete" data-id="${course.id}">Delete</button>
             </td>
           `;
           coursesTableBody.appendChild(tr);
         });
       }
 
+      // stats total = actual courses count (not filtered)
       statCourses.textContent = courses.length.toString();
-
-      // agar selected course delete ho gaya to content panel reset
-      if (selectedCourseIdForContent !== null) {
-        const stillExists = courses.some(c => c.id === selectedCourseIdForContent);
-        if (!stillExists) {
-          selectedCourseIdForContent = null;
-          editingSectionIndex = null;
-          selectedSectionIndexForLessons = null;
-          editingLessonIndex = null;
-          resetSectionForm();
-          resetLessonForm();
-          renderCourseContentPanel();
-        }
-      }
     }
 
     coursesTableBody.addEventListener('click', (e) => {
@@ -1217,18 +1050,22 @@
       if (!action || !id) return;
 
       const courseId = parseInt(id, 10);
-      const course = courses.find((c) => c.id === courseId);
-      if (!course && action !== 'delete-course') return;
 
-      if (action === 'delete-course') {
-        if (confirm('Delete this course including all its content?')) {
+      if (action === 'delete') {
+        if (confirm('Delete this course?')) {
           courses = courses.filter((c) => c.id !== courseId);
           if (editingCourseId === courseId) {
             resetCourseForm();
           }
           renderCourses();
+          // agar yahi course ka content edit ho raha tha, editor hide kar do
+          if (currentContentCourseId === courseId) {
+            hideCourseContentEditor();
+          }
         }
-      } else if (action === 'edit-course') {
+      } else if (action === 'edit') {
+        const course = courses.find((c) => c.id === courseId);
+        if (!course) return;
         editingCourseId = course.id;
         courseTitleInput.value = course.title;
         courseLevelInput.value = course.level || '';
@@ -1239,15 +1076,8 @@
         courseCancelEditBtn.style.display = 'inline-flex';
         courseTitleInput.focus();
         courseForm.scrollIntoView({ behavior: 'smooth' });
-      } else if (action === 'edit-content') {
-        selectedCourseIdForContent = course.id;
-        editingSectionIndex = null;
-        selectedSectionIndexForLessons = null;
-        editingLessonIndex = null;
-        resetSectionForm();
-        resetLessonForm();
-        renderCourseContentPanel();
-        courseContentHint.scrollIntoView({ behavior: 'smooth' });
+      } else if (action === 'content') {
+        openCourseContentEditor(courseId);
       }
     });
 
@@ -1284,8 +1114,7 @@
           level,
           type,
           price,
-          subtitle,
-          sections: []
+          subtitle
         });
       }
 
@@ -1308,295 +1137,255 @@
       renderCourses();
     });
 
-    // ===== COURSE CONTENT (SECTIONS + LESSONS) =====
+    // ===== COURSE CONTENT EDITOR LOGIC =====
 
-    function getSelectedCourse() {
-      if (selectedCourseIdForContent === null) return null;
-      return courses.find((c) => c.id === selectedCourseIdForContent) || null;
+    const courseContentEditor = document.getElementById('courseContentEditor');
+    const ccCourseTitleSpan = document.getElementById('ccCourseTitle');
+    const ccSectionsContainer = document.getElementById('ccSectionsContainer');
+    const ccAddSectionBtn = document.getElementById('ccAddSectionBtn');
+
+    // Structure: { [courseId]: [ { id, title, description, lessons: [ { id, title, type, durationLabel, isLocked, contentUrl } ] } ] }
+    let courseContents = {};
+    let currentContentCourseId = null;
+
+    function hideCourseContentEditor() {
+      currentContentCourseId = null;
+      courseContentEditor.style.display = 'none';
+      ccCourseTitleSpan.textContent = '';
+      ccSectionsContainer.innerHTML = '';
     }
 
-    function renderCourseContentPanel() {
-      const course = getSelectedCourse();
-      if (!course) {
-        courseContentHint.textContent =
-          'Koi course select nahi hai. Table me "Edit content" button pe click karo.';
-        sectionsTable.style.display = 'none';
-        sectionForm.style.display = 'none';
-        lessonPanelHint.textContent =
-          'Koi section select nahi hai. Upar wali list me "Edit lessons" pe click karo.';
-        lessonsTable.style.display = 'none';
-        lessonForm.style.display = 'none';
-        return;
+    function openCourseContentEditor(courseId) {
+      const course = courses.find((c) => c.id === courseId);
+      if (!course) return;
+
+      currentContentCourseId = courseId;
+      ccCourseTitleSpan.textContent = course.title;
+
+      if (!courseContents[courseId]) {
+        // Default: ek blank sections array
+        courseContents[courseId] = [];
       }
 
-      ensureCourseSectionsArray(course);
-      const sectionsArr = course.sections;
+      renderCourseContent();
+      courseContentEditor.style.display = 'block';
+      courseContentEditor.scrollIntoView({ behavior: 'smooth' });
+    }
 
-      courseContentHint.textContent = `Editing content for: ${course.title}`;
-      sectionsTable.style.display = 'table';
-      sectionForm.style.display = 'flex';
+    function renderCourseContent() {
+      if (!currentContentCourseId) return;
+      const sections = courseContents[currentContentCourseId] || [];
 
-      // sections render
-      sectionsTableBody.innerHTML = '';
-
-      if (sectionsArr.length === 0) {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td colspan="4" style="text-align:center;color:#9ca3af;font-size:12px;padding:8px;">
-            No sections yet. Neeche se section add karo.
-          </td>
+      if (sections.length === 0) {
+        ccSectionsContainer.innerHTML = `
+          <p class="muted" style="margin-top:4px;">
+            Abhi koi section nahi hai. "Add section" se naya section banao
+            (e.g. "Kinematics", "Vectors", "Introduction" etc.)
+          </p>
         `;
-        sectionsTableBody.appendChild(tr);
-      } else {
-        sectionsArr.forEach((sec, idx) => {
-          const lessonCount = sec.lessons ? sec.lessons.length : 0;
-          const tr = document.createElement('tr');
-          tr.innerHTML = `
-            <td>${idx + 1}</td>
-            <td>
-              <strong>${sec.title}</strong><br/>
-              <span style="font-size:11px;color:#6b7280;">${sec.description || ''}</span>
-            </td>
-            <td>${lessonCount}</td>
-            <td>
-              <button class="btn-secondary" data-action="edit-section" data-index="${idx}">Edit section</button>
-              <button class="btn-secondary" data-action="edit-lessons" data-index="${idx}">Edit lessons</button>
-              <button class="btn-secondary" data-action="delete-section" data-index="${idx}">Delete</button>
-            </td>
-          `;
-          sectionsTableBody.appendChild(tr);
-        });
-      }
-
-      // lessons panel render
-      const secIdx = selectedSectionIndexForLessons;
-      if (secIdx === null || secIdx < 0 || secIdx >= sectionsArr.length) {
-        lessonPanelHint.textContent =
-          'Koi section select nahi hai. Upar wali list me "Edit lessons" pe click karo.';
-        lessonsTable.style.display = 'none';
-        lessonForm.style.display = 'none';
         return;
       }
 
-      const activeSection = sectionsArr[secIdx];
-      const lessons = activeSection.lessons || [];
+      let html = '';
+      sections.forEach((sec, index) => {
+        html += `
+          <div class="cc-section-card">
+            <div class="cc-section-header">
+              <div>
+                <div class="cc-section-title">${index + 1}. ${escapeHtml(sec.title)}</div>
+                ${sec.description ? `<div class="cc-section-desc">${escapeHtml(sec.description)}</div>` : ''}
+              </div>
+              <div class="cc-section-actions">
+                <button class="btn-secondary" data-cc-action="add-lesson" data-sec-id="${sec.id}">+ Lesson</button>
+                <button class="btn-secondary" data-cc-action="edit-section" data-sec-id="${sec.id}">Edit</button>
+                <button class="btn-secondary" data-cc-action="delete-section" data-sec-id="${sec.id}">Delete</button>
+              </div>
+            </div>
+            <div class="cc-lessons-wrapper">
+              ${renderLessonsTable(sec)}
+            </div>
+          </div>
+        `;
+      });
 
-      lessonPanelHint.textContent = `Editing lessons for section: ${activeSection.title}`;
-      lessonsTable.style.display = 'table';
-      lessonForm.style.display = 'flex';
+      ccSectionsContainer.innerHTML = html;
+    }
 
-      lessonsTableBody.innerHTML = '';
+    function renderLessonsTable(sec) {
+      const lessons = sec.lessons || [];
       if (lessons.length === 0) {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td colspan="5" style="text-align:center;color:#9ca3af;font-size:12px;padding:8px;">
-            No lessons in this section yet. Neeche se lesson add karo.
-          </td>
+        return `
+          <div class="muted">
+            No lessons in this section yet. "Add Lesson" se video/pdf/quiz add karo.
+          </div>
         `;
-        lessonsTableBody.appendChild(tr);
-      } else {
-        lessons.forEach((lesson, idx) => {
-          const typeLabel = lesson.type ? lesson.type.toUpperCase() : '-';
-          const lockedLabel = lesson.isLocked ? 'Yes' : 'No';
-
-          const tr = document.createElement('tr');
-          tr.innerHTML = `
-            <td>${idx + 1}</td>
-            <td>${lesson.title}</td>
-            <td>${typeLabel}</td>
-            <td>${lockedLabel}</td>
-            <td>
-              <button class="btn-secondary" data-action="edit-lesson" data-index="${idx}">Edit</button>
-              <button class="btn-secondary" data-action="delete-lesson" data-index="${idx}">Delete</button>
-            </td>
-          `;
-          lessonsTableBody.appendChild(tr);
-        });
       }
+
+      let rows = '';
+      lessons.forEach((lesson, index) => {
+        const lockClass = lesson.isLocked ? 'cc-tag-lock' : 'cc-tag-unlock';
+        const lockText = lesson.isLocked ? 'Locked' : 'Free';
+        rows += `
+          <tr>
+            <td>${index + 1}</td>
+            <td>${escapeHtml(lesson.title)}</td>
+            <td>${escapeHtml(lesson.type)}</td>
+            <td>${escapeHtml(lesson.durationLabel || '')}</td>
+            <td><span class="${lockClass}">${lockText}</span></td>
+            <td>
+              <button class="btn-secondary" data-cc-action="edit-lesson" data-sec-id="${sec.id}" data-lesson-id="${lesson.id}">
+                Edit
+              </button>
+              <button class="btn-secondary" data-cc-action="delete-lesson" data-sec-id="${sec.id}" data-lesson-id="${lesson.id}">
+                Delete
+              </button>
+            </td>
+          </tr>
+        `;
+      });
+
+      return `
+        <table class="cc-lessons-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Title</th>
+              <th>Type</th>
+              <th>Duration</th>
+              <th>Lock</th>
+              <th style="width:150px;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows}
+          </tbody>
+        </table>
+      `;
     }
 
-    sectionsTableBody.addEventListener('click', (e) => {
+    ccAddSectionBtn.addEventListener('click', () => {
+      if (!currentContentCourseId) {
+        alert('Pehle kisi course ka "Content" button click karo.');
+        return;
+      }
+      const title = prompt('Section title (e.g. "Kinematics", "Introduction")');
+      if (!title) return;
+      const description = prompt('Section description (optional):') || '';
+
+      const sections = courseContents[currentContentCourseId] || [];
+      const newId = (sections[sections.length - 1]?.id || 0) + 1;
+
+      sections.push({
+        id: newId,
+        title: title.trim(),
+        description: description.trim(),
+        lessons: []
+      });
+
+      courseContents[currentContentCourseId] = sections;
+      renderCourseContent();
+    });
+
+    ccSectionsContainer.addEventListener('click', (e) => {
       const btn = e.target;
       if (!(btn instanceof HTMLElement)) return;
-      const action = btn.getAttribute('data-action');
-      const indexStr = btn.getAttribute('data-index');
-      if (!action || indexStr === null) return;
+      const action = btn.getAttribute('data-cc-action');
+      if (!action) return;
 
-      const idx = parseInt(indexStr, 10);
-      const course = getSelectedCourse();
-      if (!course) return;
-      ensureCourseSectionsArray(course);
-      const sectionsArr = course.sections;
+      const secIdAttr = btn.getAttribute('data-sec-id');
+      const lessonIdAttr = btn.getAttribute('data-lesson-id');
+      const secId = secIdAttr ? parseInt(secIdAttr, 10) : null;
+      const lessonId = lessonIdAttr ? parseInt(lessonIdAttr, 10) : null;
+
+      const sections = courseContents[currentContentCourseId] || [];
+      const secIndex = sections.findIndex((s) => s.id === secId);
+      if (secIndex === -1 && secId !== null) return;
+      const section = secId !== null ? sections[secIndex] : null;
 
       if (action === 'delete-section') {
-        if (confirm('Delete this section including all its lessons?')) {
-          sectionsArr.splice(idx, 1);
-          if (editingSectionIndex === idx) editingSectionIndex = null;
-          if (selectedSectionIndexForLessons === idx) {
-            selectedSectionIndexForLessons = null;
-            editingLessonIndex = null;
-          }
-          renderCourses();
-          renderCourseContentPanel();
+        if (!section) return;
+        if (confirm('Delete this section and all its lessons?')) {
+          sections.splice(secIndex, 1);
+          courseContents[currentContentCourseId] = sections;
+          renderCourseContent();
         }
       } else if (action === 'edit-section') {
-        const sec = sectionsArr[idx];
-        editingSectionIndex = idx;
-        sectionTitleInput.value = sec.title;
-        sectionDescriptionInput.value = sec.description || '';
-        sectionSubmitBtn.textContent = 'Update section';
-        sectionCancelEditBtn.style.display = 'inline-flex';
-        sectionTitleInput.focus();
-      } else if (action === 'edit-lessons') {
-        selectedSectionIndexForLessons = idx;
-        editingLessonIndex = null;
-        resetLessonForm();
-        renderCourseContentPanel();
-        lessonPanelHint.scrollIntoView({ behavior: 'smooth' });
-      }
-    });
-
-    function resetSectionForm() {
-      editingSectionIndex = null;
-      sectionForm.reset();
-      sectionSubmitBtn.textContent = 'Save section';
-      sectionCancelEditBtn.style.display = 'none';
-    }
-
-    sectionCancelEditBtn.addEventListener('click', resetSectionForm);
-
-    sectionForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const course = getSelectedCourse();
-      if (!course) return;
-      ensureCourseSectionsArray(course);
-
-      const title = sectionTitleInput.value.trim();
-      const description = sectionDescriptionInput.value.trim();
-      if (!title) return;
-
-      const sectionsArr = course.sections;
-
-      if (editingSectionIndex !== null) {
-        sectionsArr[editingSectionIndex] = {
-          ...sectionsArr[editingSectionIndex],
-          title,
-          description
-        };
-      } else {
-        const newId = `s${sectionsArr.length + 1}`;
-        sectionsArr.push({
-          id: newId,
-          title,
-          description,
-          lessons: []
-        });
-      }
-
-      course.sections = sectionsArr;
-      resetSectionForm();
-      renderCourses();
-      renderCourseContentPanel();
-    });
-
-    // lessons logic
-    lessonsTableBody.addEventListener('click', (e) => {
-      const btn = e.target;
-      if (!(btn instanceof HTMLElement)) return;
-      const action = btn.getAttribute('data-action');
-      const indexStr = btn.getAttribute('data-index');
-      if (!action || indexStr === null) return;
-
-      const idx = parseInt(indexStr, 10);
-      const course = getSelectedCourse();
-      if (!course) return;
-      ensureCourseSectionsArray(course);
-
-      const secIdx = selectedSectionIndexForLessons;
-      if (secIdx === null) return;
-      const section = course.sections[secIdx];
-      const lessons = section.lessons || [];
-
-      if (action === 'delete-lesson') {
-        if (confirm('Delete this lesson?')) {
-          lessons.splice(idx, 1);
-          section.lessons = lessons;
-          editingLessonIndex = null;
-          renderCourseContentPanel();
-        }
+        if (!section) return;
+        const newTitle = prompt('Section title:', section.title) || section.title;
+        const newDesc = prompt('Section description (optional):', section.description || '') || '';
+        section.title = newTitle.trim();
+        section.description = newDesc.trim();
+        courseContents[currentContentCourseId] = sections;
+        renderCourseContent();
+      } else if (action === 'add-lesson') {
+        if (!section) return;
+        addOrEditLesson(section, null);
       } else if (action === 'edit-lesson') {
-        const lesson = lessons[idx];
-        editingLessonIndex = idx;
-
-        lessonTitleInput.value = lesson.title;
-        lessonTypeSelect.value = lesson.type || 'video';
-        lessonDurationInput.value = lesson.durationLabel || '';
-        lessonIsLockedSelect.value = lesson.isLocked ? 'true' : 'false';
-
-        lessonSubmitBtn.textContent = 'Update lesson';
-        lessonCancelEditBtn.style.display = 'inline-flex';
-        lessonTitleInput.focus();
+        if (!section || lessonId == null) return;
+        const lesson = section.lessons.find((l) => l.id === lessonId);
+        if (!lesson) return;
+        addOrEditLesson(section, lesson);
+      } else if (action === 'delete-lesson') {
+        if (!section || lessonId == null) return;
+        if (confirm('Delete this lesson?')) {
+          section.lessons = section.lessons.filter((l) => l.id !== lessonId);
+          courseContents[currentContentCourseId] = sections;
+          renderCourseContent();
+        }
       }
     });
 
-    function resetLessonForm() {
-      editingLessonIndex = null;
-      lessonForm.reset();
-      lessonSubmitBtn.textContent = 'Save lesson';
-      lessonCancelEditBtn.style.display = 'none';
-    }
-
-    lessonCancelEditBtn.addEventListener('click', resetLessonForm);
-
-    lessonForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const course = getSelectedCourse();
-      if (!course) return;
-      ensureCourseSectionsArray(course);
-
-      const secIdx = selectedSectionIndexForLessons;
-      if (secIdx === null) return;
-      const section = course.sections[secIdx];
-      const lessons = section.lessons || [];
-
-      const title = lessonTitleInput.value.trim();
-      const type = lessonTypeSelect.value;
-      const durationLabel = lessonDurationInput.value.trim();
-      const isLocked = lessonIsLockedSelect.value === 'true';
-
+    function addOrEditLesson(section, existingLesson) {
+      const prev = existingLesson || {};
+      const title = prompt('Lesson title:', prev.title || '');
       if (!title) return;
 
-      if (editingLessonIndex !== null) {
-        lessons[editingLessonIndex] = {
-          ...lessons[editingLessonIndex],
-          title,
-          type,
-          durationLabel,
-          isLocked
-        };
-      } else {
-        const newId = `l${lessons.length + 1}`;
-        lessons.push({
-          id: newId,
-          title,
-          type,
-          durationLabel,
-          isLocked
-        });
+      const typeRaw = prompt('Type (video/pdf/notes/quiz):', prev.type || 'video') || 'video';
+      const type = typeRaw.trim().toLowerCase();
+      if (!['video', 'pdf', 'notes', 'quiz'].includes(type)) {
+        alert('Type must be one of: video, pdf, notes, quiz');
+        return;
       }
 
-      section.lessons = lessons;
-      resetLessonForm();
-      renderCourseContentPanel();
-    });
+      const durationLabel =
+        prompt('Duration label (e.g. "10 min", optional):', prev.durationLabel || '') || '';
+      const contentUrl =
+        prompt('Content URL (YouTube link / PDF link etc., optional):', prev.contentUrl || '') || '';
+      const lockAnswer =
+        prompt('Is this lesson locked for premium only? (yes/no):', prev.isLocked ? 'yes' : 'no') || 'no';
+      const isLocked = lockAnswer.trim().toLowerCase().startsWith('y');
 
-    // ===== TESTS FRONTEND LOGIC (with question editor) =====
+      if (existingLesson) {
+        existingLesson.title = title.trim();
+        existingLesson.type = type;
+        existingLesson.durationLabel = durationLabel.trim();
+        existingLesson.contentUrl = contentUrl.trim();
+        existingLesson.isLocked = isLocked;
+      } else {
+        const lessons = section.lessons || [];
+        const newLessonId = (lessons[lessons.length - 1]?.id || 0) + 1;
+        lessons.push({
+          id: newLessonId,
+          title: title.trim(),
+          type,
+          durationLabel: durationLabel.trim(),
+          contentUrl: contentUrl.trim(),
+          isLocked
+        });
+        section.lessons = lessons;
+      }
+
+      renderCourseContent();
+    }
+
+    // ===== TESTS FRONTEND LOGIC =====
     const testsTableBody = document.querySelector('#testsTable tbody');
     const testForm = document.getElementById('testForm');
     const statTests = document.getElementById('stat-tests');
     const testNameInput = document.getElementById('testName');
     const testCourseInput = document.getElementById('testCourse');
-    const testDurationMinutesInput = document.getElementById('testDurationMinutes');
+    const testQuestionsInput = document.getElementById('testQuestions');
+    const testDurationInput = document.getElementById('testDuration');
     const testStatusInput = document.getElementById('testStatus');
     const testSubmitBtn = document.getElementById('testSubmitBtn');
     const testCancelEditBtn = document.getElementById('testCancelEditBtn');
@@ -1609,24 +1398,6 @@
     let testSearchTerm = '';
     let testFilterStatus = 'all';
 
-    // Question editor DOM
-    const questionsTable = document.getElementById('questionsTable');
-    const questionsTableBody = questionsTable.querySelector('tbody');
-    const questionPanelHint = document.getElementById('questionPanelHint');
-
-    const questionForm = document.getElementById('questionForm');
-    const qTextInput = document.getElementById('qText');
-    const optAInput = document.getElementById('optA');
-    const optBInput = document.getElementById('optB');
-    const optCInput = document.getElementById('optC');
-    const optDInput = document.getElementById('optD');
-    const correctOptSelect = document.getElementById('correctOpt');
-    const questionSubmitBtn = document.getElementById('questionSubmitBtn');
-    const questionCancelEditBtn = document.getElementById('questionCancelEditBtn');
-
-    let selectedTestIdForQuestions = null;
-    let editingQuestionIndex = null;
-
     function renderTests() {
       testsTableBody.innerHTML = '';
 
@@ -1634,8 +1405,8 @@
         const term = testSearchTerm;
         const matchesSearch =
           !term ||
-          t.title.toLowerCase().includes(term) ||
-          (t.courseName && t.courseName.toLowerCase().includes(term));
+          t.name.toLowerCase().includes(term) ||
+          (t.course && t.course.toLowerCase().includes(term));
 
         const matchesStatus =
           testFilterStatus === 'all' || t.status === testFilterStatus;
@@ -1653,22 +1424,18 @@
         testsTableBody.appendChild(tr);
       } else {
         filtered.forEach((t, index) => {
-          const questionCount = t.questions ? t.questions.length : 0;
+          const tr = document.createElement('tr');
           const badgeClass = t.status === 'free' ? 'badge-free' : 'badge-paid';
           const badgeText = t.status === 'free' ? 'Free' : 'Premium';
-          const durationText = t.durationMinutes ? `${t.durationMinutes} min` : '-';
-
-          const tr = document.createElement('tr');
           tr.innerHTML = `
             <td>${index + 1}</td>
-            <td>${t.title}</td>
-            <td>${t.courseName || '-'}</td>
-            <td>${questionCount}</td>
-            <td>${durationText}</td>
+            <td>${escapeHtml(t.name)}</td>
+            <td>${escapeHtml(t.course || '-')}</td>
+            <td>${t.questions || '-'}</td>
+            <td>${escapeHtml(t.duration || '-')}</td>
             <td><span class="badge ${badgeClass}">${badgeText}</span></td>
             <td>
-              <button class="btn-secondary" data-action="edit-test" data-id="${t.id}">Edit meta</button>
-              <button class="btn-secondary" data-action="edit-questions" data-id="${t.id}">Edit questions</button>
+              <button class="btn-secondary" data-action="edit-test" data-id="${t.id}">Edit</button>
               <button class="btn-secondary" data-action="delete-test" data-id="${t.id}">Delete</button>
             </td>
           `;
@@ -1677,16 +1444,6 @@
       }
 
       statTests.textContent = tests.length.toString();
-
-      // If currently selected test was deleted, reset question editor
-      if (selectedTestIdForQuestions !== null) {
-        const stillExists = tests.some(t => t.id === selectedTestIdForQuestions);
-        if (!stillExists) {
-          selectedTestIdForQuestions = null;
-          resetQuestionForm();
-          renderQuestionPanel();
-        }
-      }
     }
 
     testsTableBody.addEventListener('click', (e) => {
@@ -1709,20 +1466,15 @@
         const t = tests.find((x) => x.id === testId);
         if (!t) return;
         editingTestId = t.id;
-        testNameInput.value = t.title;
-        testCourseInput.value = t.courseName || '';
-        testDurationMinutesInput.value = t.durationMinutes || '';
+        testNameInput.value = t.name;
+        testCourseInput.value = t.course || '';
+        testQuestionsInput.value = t.questions || '';
+        testDurationInput.value = t.duration || '';
         testStatusInput.value = t.status;
         testSubmitBtn.textContent = 'Update test';
         testCancelEditBtn.style.display = 'inline-flex';
         testForm.scrollIntoView({ behavior: 'smooth' });
         testNameInput.focus();
-      } else if (action === 'edit-questions') {
-        selectedTestIdForQuestions = testId;
-        editingQuestionIndex = null;
-        resetQuestionForm();
-        renderQuestionPanel();
-        questionPanelHint.scrollIntoView({ behavior: 'smooth' });
       }
     });
 
@@ -1737,36 +1489,29 @@
 
     testForm.addEventListener('submit', (e) => {
       e.preventDefault();
-      const title = testNameInput.value.trim();
-      if (!title) return;
+      const name = testNameInput.value.trim();
+      if (!name) return;
 
       const courseName = testCourseInput.value.trim();
-      const durationMinutes = testDurationMinutesInput.value
-        ? Number(testDurationMinutesInput.value)
-        : null;
+      const questions = testQuestionsInput.value ? Number(testQuestionsInput.value) : null;
+      const duration = testDurationInput.value.trim();
       const status = testStatusInput.value;
 
       if (editingTestId) {
         tests = tests.map((t) =>
           t.id === editingTestId
-            ? {
-                ...t,
-                title,
-                courseName,
-                durationMinutes,
-                status
-              }
+            ? { ...t, name, course: courseName, questions, duration, status }
             : t
         );
       } else {
         const newId = (tests[tests.length - 1]?.id || 0) + 1;
         tests.push({
           id: newId,
-          title,
-          courseName,
-          durationMinutes,
-          status,
-          questions: []
+          name,
+          course: courseName,
+          questions,
+          duration,
+          status
         });
       }
 
@@ -1787,157 +1532,6 @@
     testFilterStatusSelect.addEventListener('change', (e) => {
       testFilterStatus = e.target.value;
       renderTests();
-    });
-
-    // ===== QUESTIONS EDITOR LOGIC =====
-    function renderQuestionPanel() {
-      if (selectedTestIdForQuestions === null) {
-        questionPanelHint.textContent =
-          'Koi test select nahi hai. "Edit questions" button pe click karo.';
-        questionsTable.style.display = 'none';
-        questionForm.style.display = 'none';
-        return;
-      }
-
-      const test = tests.find((t) => t.id === selectedTestIdForQuestions);
-      if (!test) {
-        questionPanelHint.textContent =
-          'Selected test nahi mila (shayad delete ho gaya).';
-        questionsTable.style.display = 'none';
-        questionForm.style.display = 'none';
-        return;
-      }
-
-      questionPanelHint.textContent = `Editing questions for: ${test.title}`;
-      questionsTable.style.display = 'table';
-      questionForm.style.display = 'flex';
-
-      const qs = test.questions || [];
-      questionsTableBody.innerHTML = '';
-
-      if (qs.length === 0) {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td colspan="4" style="text-align:center;color:#9ca3af;font-size:12px;padding:8px;">
-            No questions added yet. Neeche se question add karo.
-          </td>
-        `;
-        questionsTableBody.appendChild(tr);
-      } else {
-        qs.forEach((q, idx) => {
-          const correctIndex = q.correctOptionIndex ?? -1;
-          const correctOpt =
-            correctIndex >= 0 && q.options && q.options[correctIndex]
-              ? q.options[correctIndex].id
-              : '-';
-
-          const tr = document.createElement('tr');
-          tr.innerHTML = `
-            <td>${idx + 1}</td>
-            <td>${q.text}</td>
-            <td>${correctOpt}</td>
-            <td>
-              <button class="btn-secondary" data-action="edit-q" data-index="${idx}">Edit</button>
-              <button class="btn-secondary" data-action="delete-q" data-index="${idx}">Delete</button>
-            </td>
-          `;
-          questionsTableBody.appendChild(tr);
-        });
-      }
-    }
-
-    questionsTableBody.addEventListener('click', (e) => {
-      const btn = e.target;
-      if (!(btn instanceof HTMLElement)) return;
-      const action = btn.getAttribute('data-action');
-      const indexStr = btn.getAttribute('data-index');
-      if (!action || indexStr === null) return;
-      const idx = parseInt(indexStr, 10);
-
-      const test = tests.find((t) => t.id === selectedTestIdForQuestions);
-      if (!test) return;
-
-      const qs = test.questions || [];
-
-      if (action === 'delete-q') {
-        if (confirm('Delete this question?')) {
-          qs.splice(idx, 1);
-          test.questions = qs;
-          renderTests();
-          renderQuestionPanel();
-        }
-      } else if (action === 'edit-q') {
-        const q = qs[idx];
-        editingQuestionIndex = idx;
-
-        qTextInput.value = q.text;
-        optAInput.value = q.options[0]?.text || '';
-        optBInput.value = q.options[1]?.text || '';
-        optCInput.value = q.options[2]?.text || '';
-        optDInput.value = q.options[3]?.text || '';
-        correctOptSelect.value = String(q.correctOptionIndex ?? 0);
-
-        questionSubmitBtn.textContent = 'Update question';
-        questionCancelEditBtn.style.display = 'inline-flex';
-        qTextInput.focus();
-      }
-    });
-
-    function resetQuestionForm() {
-      editingQuestionIndex = null;
-      questionForm.reset();
-      questionSubmitBtn.textContent = 'Save question';
-      questionCancelEditBtn.style.display = 'none';
-    }
-
-    questionCancelEditBtn.addEventListener('click', resetQuestionForm);
-
-    questionForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      if (selectedTestIdForQuestions === null) return;
-
-      const test = tests.find((t) => t.id === selectedTestIdForQuestions);
-      if (!test) return;
-
-      const text = qTextInput.value.trim();
-      const a = optAInput.value.trim();
-      const b = optBInput.value.trim();
-      const c = optCInput.value.trim();
-      const d = optDInput.value.trim();
-      const correctIndex = Number(correctOptSelect.value);
-
-      if (!text || !a || !b || !c || !d) return;
-
-      const options = [
-        { id: "A", text: a },
-        { id: "B", text: b },
-        { id: "C", text: c },
-        { id: "D", text: d },
-      ];
-
-      const qs = test.questions || [];
-
-      if (editingQuestionIndex !== null) {
-        qs[editingQuestionIndex] = {
-          ...qs[editingQuestionIndex],
-          text,
-          options,
-          correctOptionIndex: correctIndex
-        };
-      } else {
-        const newId = `q${(qs.length + 1)}`;
-        qs.push({
-          id: newId,
-          text,
-          options,
-          correctOptionIndex: correctIndex
-        });
-      }
-
-      test.questions = qs;
-      resetQuestionForm();
-      renderTests();
-      renderQuestionPanel();
     });
 
     // ===== UPDATES FRONTEND LOGIC =====
@@ -1982,11 +1576,11 @@
           tr.innerHTML = `
             <td>${index + 1}</td>
             <td>
-              <strong>${u.title}</strong><br/>
-              <span style="font-size:11px;color:#6b7280;">${u.body || ''}</span>
+              <strong>${escapeHtml(u.title)}</strong><br/>
+              <span style="font-size:11px;color:#6b7280;">${escapeHtml(u.body || '')}</span>
             </td>
-            <td>${u.audience || 'All'}</td>
-            <td>${u.createdAt || '-'}</td>
+            <td>${escapeHtml(u.audience || 'All')}</td>
+            <td>${escapeHtml(u.createdAt || '-')}</td>
             <td>
               <button class="btn-secondary" data-action="edit-update" data-id="${u.id}">Edit</button>
               <button class="btn-secondary" data-action="delete-update" data-id="${u.id}">Delete</button>
@@ -2080,6 +1674,17 @@
       updateSearchTerm = e.target.value.toLowerCase();
       renderUpdates();
     });
+
+    // ===== UTIL =====
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
 
     // ===== INITIAL RENDER =====
     renderCourses();
