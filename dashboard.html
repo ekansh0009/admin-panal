@@ -1511,6 +1511,7 @@
     }
 
     // ===== TESTS FRONTEND LOGIC =====
+       // ===== TESTS FRONTEND LOGIC =====
     const testsTableBody = document.querySelector('#testsTable tbody');
     const testForm = document.getElementById('testForm');
     const statTests = document.getElementById('stat-tests');
@@ -1529,6 +1530,251 @@
     let editingTestId = null;
     let testSearchTerm = '';
     let testFilterStatus = 'all';
+
+    // 🔹 NEW: Test content builder DOM + state
+    const testContentEditor = document.getElementById('testContentEditor');
+    const tcTestTitleSpan = document.getElementById('tcTestTitle');
+    const tcQuestionsContainer = document.getElementById('tcQuestionsContainer');
+    const tcAddQuestionBtn = document.getElementById('tcAddQuestionBtn');
+
+    // Structure: { [testId]: [ { id, text, marks, negativeMarks, explanation, options: [ { id, label, text, isCorrect } ] } ] }
+    let testsContents = {};
+    let currentContentTestId = null;
+
+    function hideTestContentEditor() {
+      currentContentTestId = null;
+      testContentEditor.style.display = 'none';
+      tcTestTitleSpan.textContent = '';
+      tcQuestionsContainer.innerHTML = '';
+    }
+
+    function openTestContentEditor(testId) {
+      const t = tests.find((x) => x.id === testId);
+      if (!t) return;
+
+      currentContentTestId = testId;
+      tcTestTitleSpan.textContent = t.name;
+
+      if (!testsContents[testId]) {
+        testsContents[testId] = [];
+      }
+
+      renderTestContent();
+      testContentEditor.style.display = 'block';
+      testContentEditor.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function getCurrentTestContentPayload() {
+      if (!currentContentTestId) return null;
+      const t = tests.find((x) => x.id === currentContentTestId);
+      if (!t) return null;
+
+      const questions = (testsContents[currentContentTestId] || []).map((q) => ({
+        id: q.id,
+        text: q.text,
+        marks: q.marks,
+        negativeMarks: q.negativeMarks,
+        explanation: q.explanation,
+        options: (q.options || []).map((opt) => ({
+          id: opt.id,
+          label: opt.label,
+          text: opt.text,
+          isCorrect: !!opt.isCorrect
+        }))
+      }));
+
+      // Ye payload baad me backend/Firestore ke liye directly use ho sakta hai
+      return {
+        testId: t.id,
+        testName: t.name,
+        course: t.course || '',
+        questions
+      };
+    }
+
+    function renderTestContent() {
+      if (!currentContentTestId) return;
+
+      const questions = testsContents[currentContentTestId] || [];
+      if (questions.length === 0) {
+        tcQuestionsContainer.innerHTML = `
+          <p class="muted" style="margin-top:4px;">
+            Abhi koi question nahi hai. "Add question" se MCQ add karo.
+          </p>
+        `;
+        return;
+      }
+
+      let html = '';
+      questions.forEach((q, index) => {
+        const marksText = (q.marks ?? q.marks === 0) ? `Marks: ${q.marks}` : '';
+        const negText = (q.negativeMarks ?? q.negativeMarks === 0)
+          ? (q.negativeMarks ? ` | Negative: -${q.negativeMarks}` : ' | Negative: 0')
+          : '';
+        const metaLine = (marksText || negText) ? (marksText + negText) : '';
+
+        let optionsRows = '';
+        (q.options || []).forEach((opt) => {
+          const badge = opt.isCorrect
+            ? '<span class="cc-tag-unlock">Correct</span>'
+            : '<span class="cc-tag-lock">Incorrect</span>';
+          optionsRows += `
+            <tr>
+              <td>${escapeHtml(opt.label)}</td>
+              <td>${escapeHtml(opt.text)}</td>
+              <td>${badge}</td>
+            </tr>
+          `;
+        });
+
+        if (!optionsRows) {
+          optionsRows = `
+            <tr>
+              <td colspan="3" style="font-size:11px;color:#9ca3af;padding:6px 8px;">
+                No options added for this question.
+              </td>
+            </tr>
+          `;
+        }
+
+        html += `
+          <div class="cc-section-card">
+            <div class="cc-section-header">
+              <div>
+                <div class="cc-section-title">Q${index + 1}. ${escapeHtml(q.text)}</div>
+                ${metaLine ? `<div class="cc-section-desc">${metaLine}</div>` : ''}
+                ${q.explanation ? `<div class="cc-section-desc">Explanation: ${escapeHtml(q.explanation)}</div>` : ''}
+              </div>
+              <div class="cc-section-actions">
+                <button class="btn-secondary" data-tc-action="edit-question" data-qid="${q.id}">Edit</button>
+                <button class="btn-secondary" data-tc-action="delete-question" data-qid="${q.id}">Delete</button>
+              </div>
+            </div>
+            <div class="cc-lessons-wrapper">
+              <table class="cc-lessons-table">
+                <thead>
+                  <tr>
+                    <th style="width:60px;">Option</th>
+                    <th>Text</th>
+                    <th style="width:90px;">Correct?</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${optionsRows}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        `;
+      });
+
+      tcQuestionsContainer.innerHTML = html;
+    }
+
+    function addOrEditQuestion(existingQuestion) {
+      if (!currentContentTestId) {
+        alert('Pehle kisi test ka "Content" button click karo.');
+        return;
+      }
+
+      const prev = existingQuestion || {};
+      const questionsArr = testsContents[currentContentTestId] || [];
+
+      const text = prompt('Question text:', prev.text || '');
+      if (!text) return;
+
+      const marksRaw = prompt('Marks for correct answer (e.g. 4):', prev.marks != null ? String(prev.marks) : '1');
+      const marks = marksRaw ? Number(marksRaw) : null;
+
+      const negRaw = prompt('Negative marks (e.g. 1 or 0, optional):', prev.negativeMarks != null ? String(prev.negativeMarks) : '0');
+      const negativeMarks = negRaw !== null && negRaw !== '' ? Number(negRaw) : null;
+
+      const explanation = prompt('Explanation (optional):', prev.explanation || '') || '';
+
+      let optionsCountRaw = prompt('Number of options (3–6):', prev.options ? String(prev.options.length) : '4');
+      let optionsCount = optionsCountRaw ? Number(optionsCountRaw) : 4;
+      if (isNaN(optionsCount) || optionsCount < 3 || optionsCount > 6) {
+        optionsCount = 4;
+      }
+
+      const labels = ['A', 'B', 'C', 'D', 'E', 'F'];
+      const options = [];
+      for (let i = 0; i < optionsCount; i++) {
+        const prevOpt = prev.options && prev.options[i] ? prev.options[i].text : '';
+        const optText = prompt(`Option ${labels[i]} text:`, prevOpt || '');
+        if (!optText) {
+          alert('Option text empty, question cancel kar diya gaya.');
+          return;
+        }
+        options.push({
+          id: i + 1,
+          label: labels[i],
+          text: optText.trim(),
+          isCorrect: false
+        });
+      }
+
+      let correctRaw = prompt(
+        `Correct option number (1-${optionsCount}) (e.g. 1 for ${labels[0]}):`,
+        '1'
+      );
+      let correctIndex = correctRaw ? Number(correctRaw) : 1;
+      if (isNaN(correctIndex) || correctIndex < 1 || correctIndex > optionsCount) {
+        correctIndex = 1;
+      }
+      options.forEach((opt, idx) => {
+        opt.isCorrect = idx === (correctIndex - 1);
+      });
+
+      if (existingQuestion) {
+        existingQuestion.text = text.trim();
+        existingQuestion.marks = marks;
+        existingQuestion.negativeMarks = negativeMarks;
+        existingQuestion.explanation = explanation.trim();
+        existingQuestion.options = options;
+      } else {
+        const newId = (questionsArr[questionsArr.length - 1]?.id || 0) + 1;
+        questionsArr.push({
+          id: newId,
+          text: text.trim(),
+          marks,
+          negativeMarks,
+          explanation: explanation.trim(),
+          options
+        });
+        testsContents[currentContentTestId] = questionsArr;
+      }
+
+      renderTestContent();
+    }
+
+    tcAddQuestionBtn.addEventListener('click', () => {
+      addOrEditQuestion(null);
+    });
+
+    tcQuestionsContainer.addEventListener('click', (e) => {
+      const btn = e.target;
+      if (!(btn instanceof HTMLElement)) return;
+      const action = btn.getAttribute('data-tc-action');
+      if (!action) return;
+
+      const qidAttr = btn.getAttribute('data-qid');
+      const qid = qidAttr ? parseInt(qidAttr, 10) : null;
+      const questionsArr = testsContents[currentContentTestId] || [];
+      const qIndex = questionsArr.findIndex((q) => q.id === qid);
+      if (qIndex === -1) return;
+      const question = questionsArr[qIndex];
+
+      if (action === 'edit-question') {
+        addOrEditQuestion(question);
+      } else if (action === 'delete-question') {
+        if (confirm('Delete this question?')) {
+          questionsArr.splice(qIndex, 1);
+          testsContents[currentContentTestId] = questionsArr;
+          renderTestContent();
+        }
+      }
+    });
 
     function renderTests() {
       testsTableBody.innerHTML = '';
@@ -1567,6 +1813,7 @@
             <td>${escapeHtml(t.duration || '-')}</td>
             <td><span class="badge ${badgeClass}">${badgeText}</span></td>
             <td>
+              <button class="btn-secondary" data-action="content-test" data-id="${t.id}">Content</button>
               <button class="btn-secondary" data-action="edit-test" data-id="${t.id}">Edit</button>
               <button class="btn-secondary" data-action="delete-test" data-id="${t.id}">Delete</button>
             </td>
@@ -1592,6 +1839,10 @@
           if (editingTestId === testId) {
             resetTestForm();
           }
+          // agar yahi test ka content edit ho raha tha, editor hide kar do
+          if (currentContentTestId === testId) {
+            hideTestContentEditor();
+          }
           renderTests();
         }
       } else if (action === 'edit-test') {
@@ -1607,6 +1858,8 @@
         testCancelEditBtn.style.display = 'inline-flex';
         testForm.scrollIntoView({ behavior: 'smooth' });
         testNameInput.focus();
+      } else if (action === 'content-test') {
+        openTestContentEditor(testId);
       }
     });
 
@@ -1665,6 +1918,7 @@
       testFilterStatus = e.target.value;
       renderTests();
     });
+
 
     // ===== UPDATES FRONTEND LOGIC =====
     const updatesTableBody = document.querySelector('#updatesTable tbody');
