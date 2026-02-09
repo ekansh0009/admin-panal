@@ -811,23 +811,49 @@
 
     // ===== FRONTEND STATE (dummy data) =====
     let courses = [
+  {
+    id: 1,
+    title: "Physics Crash Course",
+    level: "Class 11",
+    type: "free",
+    price: 0,
+    subtitle: "Mechanics fast revision"
+  },
+  ...
+];
+Isko thoda sa aise kar sakte ho (SAME jaise Flutter model ka JSON):
+
+let courses = [
+  {
+    id: "physics_crash_11",
+    title: "Physics Crash Course",
+    subtitle: "Mechanics fast revision",
+    level: "Class 11",
+    is_free: true,
+    price: 0,
+    thumbnail_url: null,
+    tags: ["JEE", "Class 11", "Physics"],
+    modules: [
       {
-        id: 1,
-        title: "Physics Crash Course",
-        level: "Class 11",
-        type: "free",
-        price: 0,
-        subtitle: "Mechanics fast revision"
-      },
-      {
-        id: 2,
-        title: "Complete Maths Booster",
-        level: "Class 12",
-        type: "paid",
-        price: 999,
-        subtitle: "Boards + JEE focused"
+        id: "m1",
+        title: "Kinematics",
+        description: "1D & 2D motion basics",
+        order: 1,
+        items: [
+          {
+            id: "l1",
+            type: "video",
+            title: "Introduction & basic terms",
+            description: "Displacement, velocity, acceleration overview.",
+            duration_minutes: 12,
+            is_locked: false,
+            is_preview: true,
+            video_url: "https://example.com/videos/kinematics_intro.mp4"
+          }
+        ]
       }
-    ];
+    ]
+  },
 
     let tests = [
       {
