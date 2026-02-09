@@ -856,23 +856,31 @@ let courses = [
   },
 
     let tests = [
+  {
+    id: "jee_mock_01",
+    title: "JEE Mock Test 01",
+    description: "Mixed questions from Kinematics & Newton's Laws.",
+    duration_minutes: 60,
+    is_free: true,
+    total_marks: 100,
+    status: "Upcoming",   // same as Flutter
+    course_id: "physics_crash_11",
+    tags: ["JEE", "Physics", "Mock"],
+    questions: [
       {
-        id: 1,
-        name: "JEE Mock Test 01",
-        course: "Physics Crash Course",
-        questions: 25,
-        duration: "60 min",
-        status: "free"
-      },
-      {
-        id: 2,
-        name: "NEET Practice Set",
-        course: "Complete Biology",
-        questions: 50,
-        duration: "90 min",
-        status: "premium"
+        id: "q1",
+        text: "A body starts from rest ...",
+        options: ["4 m/s²", "5 m/s²", "10 m/s²", "2 m/s²"],
+        correct_index: 1,
+        marks: 4,
+        negative_marks: 1,
+        type: "single_choice",
+        explanation: " ..."
       }
-    ];
+    ]
+  }
+];
+
 
     let updates = [
       {
