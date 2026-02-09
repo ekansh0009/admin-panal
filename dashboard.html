@@ -604,7 +604,7 @@
         </p>
       </section>
 
-      <!-- Tests -->
+            <!-- Tests -->
       <section class="section" id="section-tests">
         <div class="section-header">
           <h2 class="section-title">Tests</h2>
@@ -628,6 +628,7 @@
           </div>
         </div>
 
+        <!-- Tests table -->
         <table id="testsTable">
           <thead>
             <tr>
@@ -637,13 +638,14 @@
               <th>Questions</th>
               <th>Duration</th>
               <th>Status</th>
-              <th style="width: 120px;">Actions</th>
+              <th style="width: 200px;">Actions</th>
             </tr>
           </thead>
           <tbody>
           </tbody>
         </table>
 
+        <!-- Test meta form (name / course / duration / status) -->
         <form class="inline-form" id="testForm">
           <div class="inline-input">
             <input type="text" id="testName" placeholder="Test title" required />
@@ -652,10 +654,7 @@
             <input type="text" id="testCourse" placeholder="Belongs to course" />
           </div>
           <div class="inline-input">
-            <input type="number" id="testQuestions" placeholder="Questions" min="1" />
-          </div>
-          <div class="inline-input">
-            <input type="text" id="testDuration" placeholder="Duration (e.g. 60 min)" />
+            <input type="number" id="testDurationMinutes" placeholder="Duration (minutes)" min="1" />
           </div>
           <div class="inline-input">
             <select id="testStatus">
@@ -669,37 +668,73 @@
           </button>
         </form>
 
-        <!-- TEST QUESTIONS PREVIEW (demo) -->
-        <h3 style="margin-top:18px; font-size:16px; font-weight:600;">Test questions (preview)</h3>
+        <p class="muted">
+          Yaha ka test structure future me app ke <code>TestPaper</code> model se match karega
+          (id, title, courseName, durationMinutes, questions...).
+        </p>
 
-        <div class="inline-form" id="testQuestionsPreview">
-          <div class="inline-input">
-            <select id="testContentSelect">
-              <!-- JS se fill -->
-            </select>
+        <!-- 🔹 Question editor panel (selected test ke liye) -->
+        <div class="card" style="margin-top:16px;">
+          <div class="section-header" style="margin-bottom:8px;">
+            <h3 class="section-title" style="font-size:16px;">Questions for selected test</h3>
           </div>
-          <div style="flex: 2 1 240px; min-width:0;">
-            <table style="width:100%; font-size:12px; border-collapse:collapse;">
-              <thead>
-                <tr style="background:#f9fafb;">
-                  <th style="padding:6px 8px; text-align:left;">#</th>
-                  <th style="padding:6px 8px; text-align:left;">Question</th>
-                  <th style="padding:6px 8px; text-align:left;">Options</th>
-                </tr>
-              </thead>
-              <tbody id="testQuestionsTableBody">
-              </tbody>
-            </table>
-          </div>
+
+          <p class="muted" id="questionPanelHint">
+            Koi test select nahi hai. "Edit questions" button pe click karo.
+          </p>
+
+          <!-- Questions list -->
+          <table id="questionsTable" style="margin-top:8px; display:none;">
+            <thead>
+              <tr>
+                <th style="width:50px;">#</th>
+                <th>Question</th>
+                <th style="width:120px;">Correct</th>
+                <th style="width:120px;">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+            </tbody>
+          </table>
+
+          <!-- Question form -->
+          <form class="inline-form" id="questionForm" style="margin-top:12px; display:none;">
+            <div class="inline-input" style="flex:1 1 100%;">
+              <textarea id="qText" rows="2" placeholder="Question text" required></textarea>
+            </div>
+            <div class="inline-input">
+              <input type="text" id="optA" placeholder="Option A" required />
+            </div>
+            <div class="inline-input">
+              <input type="text" id="optB" placeholder="Option B" required />
+            </div>
+            <div class="inline-input">
+              <input type="text" id="optC" placeholder="Option C" required />
+            </div>
+            <div class="inline-input">
+              <input type="text" id="optD" placeholder="Option D" required />
+            </div>
+            <div class="inline-input">
+              <select id="correctOpt">
+                <option value="0">Correct: A</option>
+                <option value="1">Correct: B</option>
+                <option value="2">Correct: C</option>
+                <option value="3">Correct: D</option>
+              </select>
+            </div>
+            <button type="submit" class="btn-primary" id="questionSubmitBtn">Save question</button>
+            <button type="button" class="btn-secondary" id="questionCancelEditBtn" style="display:none;">
+              Cancel edit
+            </button>
+          </form>
+
+          <p class="muted" style="margin-top:8px;">
+            Yehi questions baad me app me <code>TestQuestion</code> + <code>TestQuestionOption</code> ke
+            form me jayenge. Backend aane par sirf API / Firestore code likhna padega.
+          </p>
         </div>
-        <p class="muted">
-          Yeh preview hai. Baad me yahi se full question editor banayenge (MCQ add/edit/delete).
-        </p>
-
-        <p class="muted">
-          Yaha se tum mock tests/series manage kar paoge. Abhi ke liye ye data browser me hi stored hai.
-        </p>
       </section>
+
 
       <!-- Updates -->
       <section class="section" id="section-updates">
@@ -855,31 +890,413 @@ let courses = [
     ]
   },
 
+        // ===== TESTS FRONTEND LOGIC =====
+    // Shape: app side TestPaper/TestQuestion/TestQuestionOption se match karta hai
     let tests = [
-  {
-    id: "jee_mock_01",
-    title: "JEE Mock Test 01",
-    description: "Mixed questions from Kinematics & Newton's Laws.",
-    duration_minutes: 60,
-    is_free: true,
-    total_marks: 100,
-    status: "Upcoming",   // same as Flutter
-    course_id: "physics_crash_11",
-    tags: ["JEE", "Physics", "Mock"],
-    questions: [
       {
-        id: "q1",
-        text: "A body starts from rest ...",
-        options: ["4 m/s²", "5 m/s²", "10 m/s²", "2 m/s²"],
-        correct_index: 1,
-        marks: 4,
-        negative_marks: 1,
-        type: "single_choice",
-        explanation: " ..."
+        id: 1,
+        title: "JEE Mock Test 01",
+        courseName: "Physics Crash Course",
+        durationMinutes: 60,
+        status: "free",
+        questions: [
+          {
+            id: "q1",
+            text: "A body moves with constant acceleration. Which graph is linear?",
+            options: [
+              { id: "A", text: "Displacement vs time" },
+              { id: "B", text: "Velocity vs time" },
+              { id: "C", text: "Acceleration vs time" },
+              { id: "D", text: "Velocity vs displacement" }
+            ],
+            correctOptionIndex: 1
+          },
+          {
+            id: "q2",
+            text: "For a projectile, which quantity remains constant (no air resistance)?",
+            options: [
+              { id: "A", text: "Horizontal component of velocity" },
+              { id: "B", text: "Vertical component of velocity" },
+              { id: "C", text: "Resultant velocity" },
+              { id: "D", text: "Kinetic energy" }
+            ],
+            correctOptionIndex: 0
+          }
+        ]
+      },
+      {
+        id: 2,
+        title: "NEET Full Syllabus Test",
+        courseName: "Complete Biology",
+        durationMinutes: 180,
+        status: "premium",
+        questions: [
+          {
+            id: "n1",
+            text: "Which is NOT a function of root system?",
+            options: [
+              { id: "A", text: "Absorption of water" },
+              { id: "B", text: "Anchorage to the plant" },
+              { id: "C", text: "Photosynthesis" },
+              { id: "D", text: "Storage of food" }
+            ],
+            correctOptionIndex: 2
+          }
+        ]
       }
-    ]
-  }
-];
+    ];
+
+    const testsTableBody = document.querySelector('#testsTable tbody');
+    const testForm = document.getElementById('testForm');
+    const statTests = document.getElementById('stat-tests');
+    const testNameInput = document.getElementById('testName');
+    const testCourseInput = document.getElementById('testCourse');
+    const testDurationMinutesInput = document.getElementById('testDurationMinutes');
+    const testStatusInput = document.getElementById('testStatus');
+    const testSubmitBtn = document.getElementById('testSubmitBtn');
+    const testCancelEditBtn = document.getElementById('testCancelEditBtn');
+    const addTestScrollBtn = document.getElementById('addTestScrollBtn');
+
+    const testSearchInput = document.getElementById('testSearch');
+    const testFilterStatusSelect = document.getElementById('testFilterStatus');
+
+    let editingTestId = null;
+    let testSearchTerm = '';
+    let testFilterStatus = 'all';
+
+    // Question editor DOM
+    const questionsTable = document.getElementById('questionsTable');
+    const questionsTableBody = questionsTable.querySelector('tbody');
+    const questionPanelHint = document.getElementById('questionPanelHint');
+
+    const questionForm = document.getElementById('questionForm');
+    const qTextInput = document.getElementById('qText');
+    const optAInput = document.getElementById('optA');
+    const optBInput = document.getElementById('optB');
+    const optCInput = document.getElementById('optC');
+    const optDInput = document.getElementById('optD');
+    const correctOptSelect = document.getElementById('correctOpt');
+    const questionSubmitBtn = document.getElementById('questionSubmitBtn');
+    const questionCancelEditBtn = document.getElementById('questionCancelEditBtn');
+
+    let selectedTestIdForQuestions = null;
+    let editingQuestionIndex = null;
+
+    function renderTests() {
+      testsTableBody.innerHTML = '';
+
+      const filtered = tests.filter((t) => {
+        const term = testSearchTerm;
+        const matchesSearch =
+          !term ||
+          t.title.toLowerCase().includes(term) ||
+          (t.courseName && t.courseName.toLowerCase().includes(term));
+
+        const matchesStatus =
+          testFilterStatus === 'all' || t.status === testFilterStatus;
+
+        return matchesSearch && matchesStatus;
+      });
+
+      if (filtered.length === 0) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td colspan="7" style="text-align:center;color:#9ca3af;font-size:12px;padding:16px;">
+            No tests found. Try changing search/filter.
+          </td>
+        `;
+        testsTableBody.appendChild(tr);
+      } else {
+        filtered.forEach((t, index) => {
+          const questionCount = t.questions ? t.questions.length : 0;
+          const badgeClass = t.status === 'free' ? 'badge-free' : 'badge-paid';
+          const badgeText = t.status === 'free' ? 'Free' : 'Premium';
+          const durationText = t.durationMinutes ? `${t.durationMinutes} min` : '-';
+
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${index + 1}</td>
+            <td>${t.title}</td>
+            <td>${t.courseName || '-'}</td>
+            <td>${questionCount}</td>
+            <td>${durationText}</td>
+            <td><span class="badge ${badgeClass}">${badgeText}</span></td>
+            <td>
+              <button class="btn-secondary" data-action="edit-test" data-id="${t.id}">Edit meta</button>
+              <button class="btn-secondary" data-action="edit-questions" data-id="${t.id}">Edit questions</button>
+              <button class="btn-secondary" data-action="delete-test" data-id="${t.id}">Delete</button>
+            </td>
+          `;
+          testsTableBody.appendChild(tr);
+        });
+      }
+
+      statTests.textContent = tests.length.toString();
+
+      // If currently selected test was deleted, reset question editor
+      if (selectedTestIdForQuestions !== null) {
+        const stillExists = tests.some(t => t.id === selectedTestIdForQuestions);
+        if (!stillExists) {
+          selectedTestIdForQuestions = null;
+          resetQuestionForm();
+          renderQuestionPanel();
+        }
+      }
+    }
+
+    testsTableBody.addEventListener('click', (e) => {
+      const btn = e.target;
+      if (!(btn instanceof HTMLElement)) return;
+      const action = btn.getAttribute('data-action');
+      const id = btn.getAttribute('data-id');
+      if (!action || !id) return;
+      const testId = parseInt(id, 10);
+
+      if (action === 'delete-test') {
+        if (confirm('Delete this test?')) {
+          tests = tests.filter((t) => t.id !== testId);
+          if (editingTestId === testId) {
+            resetTestForm();
+          }
+          renderTests();
+        }
+      } else if (action === 'edit-test') {
+        const t = tests.find((x) => x.id === testId);
+        if (!t) return;
+        editingTestId = t.id;
+        testNameInput.value = t.title;
+        testCourseInput.value = t.courseName || '';
+        testDurationMinutesInput.value = t.durationMinutes || '';
+        testStatusInput.value = t.status;
+        testSubmitBtn.textContent = 'Update test';
+        testCancelEditBtn.style.display = 'inline-flex';
+        testForm.scrollIntoView({ behavior: 'smooth' });
+        testNameInput.focus();
+      } else if (action === 'edit-questions') {
+        selectedTestIdForQuestions = testId;
+        editingQuestionIndex = null;
+        resetQuestionForm();
+        renderQuestionPanel();
+        questionPanelHint.scrollIntoView({ behavior: 'smooth' });
+      }
+    });
+
+    function resetTestForm() {
+      editingTestId = null;
+      testForm.reset();
+      testSubmitBtn.textContent = 'Save test';
+      testCancelEditBtn.style.display = 'none';
+    }
+
+    testCancelEditBtn.addEventListener('click', resetTestForm);
+
+    testForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const title = testNameInput.value.trim();
+      if (!title) return;
+
+      const courseName = testCourseInput.value.trim();
+      const durationMinutes = testDurationMinutesInput.value
+        ? Number(testDurationMinutesInput.value)
+        : null;
+      const status = testStatusInput.value;
+
+      if (editingTestId) {
+        tests = tests.map((t) =>
+          t.id === editingTestId
+            ? {
+                ...t,
+                title,
+                courseName,
+                durationMinutes,
+                status
+              }
+            : t
+        );
+      } else {
+        const newId = (tests[tests.length - 1]?.id || 0) + 1;
+        tests.push({
+          id: newId,
+          title,
+          courseName,
+          durationMinutes,
+          status,
+          questions: []
+        });
+      }
+
+      resetTestForm();
+      renderTests();
+    });
+
+    addTestScrollBtn.addEventListener('click', () => {
+      testForm.scrollIntoView({ behavior: 'smooth' });
+      testNameInput.focus();
+    });
+
+    testSearchInput.addEventListener('input', (e) => {
+      testSearchTerm = e.target.value.toLowerCase();
+      renderTests();
+    });
+
+    testFilterStatusSelect.addEventListener('change', (e) => {
+      testFilterStatus = e.target.value;
+      renderTests();
+    });
+
+    // ===== QUESTIONS EDITOR LOGIC =====
+
+    function renderQuestionPanel() {
+      if (selectedTestIdForQuestions === null) {
+        questionPanelHint.textContent =
+          'Koi test select nahi hai. "Edit questions" button pe click karo.';
+        questionsTable.style.display = 'none';
+        questionForm.style.display = 'none';
+        return;
+      }
+
+      const test = tests.find((t) => t.id === selectedTestIdForQuestions);
+      if (!test) {
+        questionPanelHint.textContent =
+          'Selected test nahi mila (shayad delete ho gaya).';
+        questionsTable.style.display = 'none';
+        questionForm.style.display = 'none';
+        return;
+      }
+
+      questionPanelHint.textContent = `Editing questions for: ${test.title}`;
+      questionsTable.style.display = 'table';
+      questionForm.style.display = 'flex';
+
+      const qs = test.questions || [];
+      questionsTableBody.innerHTML = '';
+
+      if (qs.length === 0) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td colspan="4" style="text-align:center;color:#9ca3af;font-size:12px;padding:8px;">
+            No questions added yet. Neeche se question add karo.
+          </td>
+        `;
+        questionsTableBody.appendChild(tr);
+      } else {
+        qs.forEach((q, idx) => {
+          const correctIndex = q.correctOptionIndex ?? -1;
+          const correctOpt =
+            correctIndex >= 0 && q.options && q.options[correctIndex]
+              ? q.options[correctIndex].id
+              : '-';
+
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${idx + 1}</td>
+            <td>${q.text}</td>
+            <td>${correctOpt}</td>
+            <td>
+              <button class="btn-secondary" data-action="edit-q" data-index="${idx}">Edit</button>
+              <button class="btn-secondary" data-action="delete-q" data-index="${idx}">Delete</button>
+            </td>
+          `;
+          questionsTableBody.appendChild(tr);
+        });
+      }
+    }
+
+    questionsTableBody.addEventListener('click', (e) => {
+      const btn = e.target;
+      if (!(btn instanceof HTMLElement)) return;
+      const action = btn.getAttribute('data-action');
+      const indexStr = btn.getAttribute('data-index');
+      if (!action || indexStr === null) return;
+      const idx = parseInt(indexStr, 10);
+
+      const test = tests.find((t) => t.id === selectedTestIdForQuestions);
+      if (!test) return;
+
+      const qs = test.questions || [];
+
+      if (action === 'delete-q') {
+        if (confirm('Delete this question?')) {
+          qs.splice(idx, 1);
+          test.questions = qs;
+          renderTests();
+          renderQuestionPanel();
+        }
+      } else if (action === 'edit-q') {
+        const q = qs[idx];
+        editingQuestionIndex = idx;
+
+        qTextInput.value = q.text;
+        optAInput.value = q.options[0]?.text || '';
+        optBInput.value = q.options[1]?.text || '';
+        optCInput.value = q.options[2]?.text || '';
+        optDInput.value = q.options[3]?.text || '';
+        correctOptSelect.value = String(q.correctOptionIndex ?? 0);
+
+        questionSubmitBtn.textContent = 'Update question';
+        questionCancelEditBtn.style.display = 'inline-flex';
+        qTextInput.focus();
+      }
+    });
+
+    function resetQuestionForm() {
+      editingQuestionIndex = null;
+      questionForm.reset();
+      questionSubmitBtn.textContent = 'Save question';
+      questionCancelEditBtn.style.display = 'none';
+    }
+
+    questionCancelEditBtn.addEventListener('click', resetQuestionForm);
+
+    questionForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (selectedTestIdForQuestions === null) return;
+
+      const test = tests.find((t) => t.id === selectedTestIdForQuestions);
+      if (!test) return;
+
+      const text = qTextInput.value.trim();
+      const a = optAInput.value.trim();
+      const b = optBInput.value.trim();
+      const c = optCInput.value.trim();
+      const d = optDInput.value.trim();
+      const correctIndex = Number(correctOptSelect.value);
+
+      if (!text || !a || !b || !c || !d) return;
+
+      const options = [
+        { id: "A", text: a },
+        { id: "B", text: b },
+        { id: "C", text: c },
+        { id: "D", text: d },
+      ];
+
+      const qs = test.questions || [];
+
+      if (editingQuestionIndex !== null) {
+        // Update existing
+        qs[editingQuestionIndex] = {
+          ...qs[editingQuestionIndex],
+          text,
+          options,
+          correctOptionIndex: correctIndex
+        };
+      } else {
+        // New question – id simple incremental
+        const newId = `q${(qs.length + 1)}`;
+        qs.push({
+          id: newId,
+          text,
+          options,
+          correctOptionIndex: correctIndex
+        });
+      }
+
+      test.questions = qs;
+      resetQuestionForm();
+      renderTests();
+      renderQuestionPanel();
+    });
 
 
     let updates = [
