@@ -507,6 +507,7 @@
       </section>
 
       <!-- Courses -->
+            <!-- Courses -->
       <section class="section" id="section-courses">
         <div class="section-header">
           <h2 class="section-title">Courses</h2>
@@ -530,6 +531,7 @@
           </div>
         </div>
 
+        <!-- Courses table -->
         <table id="coursesTable">
           <thead>
             <tr>
@@ -538,14 +540,15 @@
               <th>Level</th>
               <th>Type</th>
               <th>Price</th>
-              <th style="width: 140px;">Actions</th>
+              <th>Sections</th>
+              <th style="width: 220px;">Actions</th>
             </tr>
           </thead>
           <tbody>
           </tbody>
         </table>
 
-        <!-- Inline add / edit form -->
+        <!-- Course meta add / edit form -->
         <form class="inline-form" id="courseForm">
           <div class="inline-input">
             <input type="text" id="courseTitle" placeholder="Course title" required />
@@ -571,37 +574,109 @@
           </button>
         </form>
 
-        <!-- COURSE CONTENT PREVIEW (demo) -->
-        <h3 style="margin-top:18px; font-size:16px; font-weight:600;">Course content (preview)</h3>
+        <p class="muted">
+          Course meta (title / level / free-paid / price) yahi se manage hoga.
+          Niche ka panel <code>CourseSection</code> + <code>CourseLesson</code> ke liye hai.
+        </p>
 
-        <div class="inline-form" id="courseContentPreview">
-          <div class="inline-input">
-            <select id="courseContentCourseSelect">
-              <!-- JS se fill hoga -->
-            </select>
+        <!-- 🔹 Course content editor (sections + lessons) -->
+        <div class="card" style="margin-top:16px;">
+          <div class="section-header" style="margin-bottom:8px;">
+            <h3 class="section-title" style="font-size:16px;">Content for selected course</h3>
           </div>
-          <div style="flex: 2 1 240px; min-width:0;">
-            <table style="width:100%; font-size:12px; border-collapse:collapse;">
-              <thead>
-                <tr style="background:#f9fafb;">
-                  <th style="padding:6px 8px; text-align:left;">#</th>
-                  <th style="padding:6px 8px; text-align:left;">Title</th>
-                  <th style="padding:6px 8px; text-align:left;">Type</th>
-                  <th style="padding:6px 8px; text-align:left;">Info</th>
-                </tr>
-              </thead>
-              <tbody id="courseContentTableBody">
-              </tbody>
-            </table>
-          </div>
+
+          <p class="muted" id="courseContentHint">
+            Koi course select nahi hai. Table me "Edit content" button pe click karo.
+          </p>
+
+          <!-- Sections table -->
+          <table id="sectionsTable" style="margin-top:8px; display:none;">
+            <thead>
+              <tr>
+                <th style="width:50px;">#</th>
+                <th>Section title</th>
+                <th style="width:120px;">Lessons</th>
+                <th style="width:160px;">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+            </tbody>
+          </table>
+
+          <!-- Section form -->
+          <form class="inline-form" id="sectionForm" style="margin-top:12px; display:none;">
+            <div class="inline-input" style="flex:2 1 200px;">
+              <input type="text" id="sectionTitle" placeholder="Section title (e.g. Kinematics basics)" required />
+            </div>
+            <div class="inline-input" style="flex:3 1 260px;">
+              <input type="text" id="sectionDescription" placeholder="Short description (optional)" />
+            </div>
+            <button type="submit" class="btn-primary" id="sectionSubmitBtn">Save section</button>
+            <button type="button" class="btn-secondary" id="sectionCancelEditBtn" style="display:none;">
+              Cancel edit
+            </button>
+          </form>
+
+          <hr style="border:none;border-top:1px solid #e5e7eb;margin:16px 0;" />
+
+          <!-- Lessons for selected section -->
+          <h4 style="font-size:15px; font-weight:700; margin-bottom:4px;">
+            Lessons in selected section
+          </h4>
+          <p class="muted" id="lessonPanelHint">
+            Koi section select nahi hai. Upar wali list me "Edit lessons" pe click karo.
+          </p>
+
+          <table id="lessonsTable" style="margin-top:8px; display:none;">
+            <thead>
+              <tr>
+                <th style="width:50px;">#</th>
+                <th>Lesson title</th>
+                <th style="width:110px;">Type</th>
+                <th style="width:80px;">Locked?</th>
+                <th style="width:140px;">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+            </tbody>
+          </table>
+
+          <form class="inline-form" id="lessonForm" style="margin-top:12px; display:none;">
+            <div class="inline-input" style="flex:2 1 220px;">
+              <input type="text" id="lessonTitle" placeholder="Lesson title" required />
+            </div>
+            <div class="inline-input">
+              <select id="lessonType">
+                <option value="video">Video</option>
+                <option value="pdf">PDF</option>
+                <option value="notes">Notes</option>
+                <option value="quiz">Quiz</option>
+              </select>
+            </div>
+            <div class="inline-input">
+              <input
+                type="text"
+                id="lessonDurationLabel"
+                placeholder="Duration label (e.g. 12 min)"
+              />
+            </div>
+            <div class="inline-input">
+              <select id="lessonIsLocked">
+                <option value="false">Free in this course</option>
+                <option value="true">Locked (premium)</option>
+              </select>
+            </div>
+            <button type="submit" class="btn-primary" id="lessonSubmitBtn">Save lesson</button>
+            <button type="button" class="btn-secondary" id="lessonCancelEditBtn" style="display:none;">
+              Cancel edit
+            </button>
+          </form>
+
+          <p class="muted" style="margin-top:8px;">
+            Yehi sections/lessons app me <code>CourseSection</code> and <code>CourseLesson</code>
+            banne wale hain. Backend ke time sirf is structure ko Firestore/DB me save karna hoga.
+          </p>
         </div>
-        <p class="muted">
-          Yeh sirf preview hai. Baad me isko full editor (add/edit/delete bundle items) bana denge.
-        </p>
-
-        <p class="muted">
-          Course add/edit/delete abhi frontend pe hi ho raha hai. Baad me yahi data Firestore/DB me save karenge.
-        </p>
       </section>
 
             <!-- Tests -->
@@ -1451,6 +1526,7 @@
     });
 
     // ===== COURSES FRONTEND LOGIC =====
+    // ===== COURSES FRONTEND LOGIC =====
     const coursesTableBody = document.querySelector('#coursesTable tbody');
     const courseForm = document.getElementById('courseForm');
     const statCourses = document.getElementById('stat-courses');
@@ -1466,13 +1542,41 @@
     const courseSearchInput = document.getElementById('courseSearch');
     const courseFilterTypeSelect = document.getElementById('courseFilterType');
 
-    // Course content preview DOM
-    const courseContentCourseSelect = document.getElementById('courseContentCourseSelect');
-    const courseContentTableBody = document.getElementById('courseContentTableBody');
-
     let editingCourseId = null;
     let courseSearchTerm = '';
     let courseFilterType = 'all';
+
+    // Content editor DOM
+    const courseContentHint = document.getElementById('courseContentHint');
+    const sectionsTable = document.getElementById('sectionsTable');
+    const sectionsTableBody = sectionsTable.querySelector('tbody');
+    const sectionForm = document.getElementById('sectionForm');
+    const sectionTitleInput = document.getElementById('sectionTitle');
+    const sectionDescriptionInput = document.getElementById('sectionDescription');
+    const sectionSubmitBtn = document.getElementById('sectionSubmitBtn');
+    const sectionCancelEditBtn = document.getElementById('sectionCancelEditBtn');
+
+    const lessonPanelHint = document.getElementById('lessonPanelHint');
+    const lessonsTable = document.getElementById('lessonsTable');
+    const lessonsTableBody = lessonsTable.querySelector('tbody');
+    const lessonForm = document.getElementById('lessonForm');
+    const lessonTitleInput = document.getElementById('lessonTitle');
+    const lessonTypeSelect = document.getElementById('lessonType');
+    const lessonDurationInput = document.getElementById('lessonDurationLabel');
+    const lessonIsLockedSelect = document.getElementById('lessonIsLocked');
+    const lessonSubmitBtn = document.getElementById('lessonSubmitBtn');
+    const lessonCancelEditBtn = document.getElementById('lessonCancelEditBtn');
+
+    let selectedCourseIdForContent = null;
+    let editingSectionIndex = null;
+    let selectedSectionIndexForLessons = null;
+    let editingLessonIndex = null;
+
+    function ensureCourseSectionsArray(course) {
+      if (!course.sections) {
+        course.sections = [];
+      }
+    }
 
     function renderCourses() {
       coursesTableBody.innerHTML = '';
@@ -1493,15 +1597,18 @@
       if (filtered.length === 0) {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td colspan="6" style="text-align:center;color:#9ca3af;font-size:12px;padding:16px;">
+          <td colspan="7" style="text-align:center;color:#9ca3af;font-size:12px;padding:16px;">
             No courses found. Try changing search/filter.
           </td>
         `;
         coursesTableBody.appendChild(tr);
       } else {
         filtered.forEach((course, index) => {
-          const tr = document.createElement('tr');
+          ensureCourseSectionsArray(course);
           const isFree = course.type === 'free';
+          const sectionCount = course.sections.length;
+
+          const tr = document.createElement('tr');
           tr.innerHTML = `
             <td>${index + 1}</td>
             <td>
@@ -1515,20 +1622,32 @@
               </span>
             </td>
             <td>₹${course.price || 0}</td>
+            <td>${sectionCount}</td>
             <td>
-              <button class="btn-secondary" data-action="edit" data-id="${course.id}">Edit</button>
-              <button class="btn-secondary" data-action="delete" data-id="${course.id}">Delete</button>
+              <button class="btn-secondary" data-action="edit-course" data-id="${course.id}">Edit meta</button>
+              <button class="btn-secondary" data-action="edit-content" data-id="${course.id}">Edit content</button>
+              <button class="btn-secondary" data-action="delete-course" data-id="${course.id}">Delete</button>
             </td>
           `;
           coursesTableBody.appendChild(tr);
         });
       }
 
-      // stats total = actual courses count (not filtered)
       statCourses.textContent = courses.length.toString();
 
-      // refresh course content dropdown
-      refreshCourseContentCourseOptions();
+      // agar selected course delete ho gaya to content panel reset
+      if (selectedCourseIdForContent !== null) {
+        const stillExists = courses.some(c => c.id === selectedCourseIdForContent);
+        if (!stillExists) {
+          selectedCourseIdForContent = null;
+          editingSectionIndex = null;
+          selectedSectionIndexForLessons = null;
+          editingLessonIndex = null;
+          resetSectionForm();
+          resetLessonForm();
+          renderCourseContentPanel();
+        }
+      }
     }
 
     coursesTableBody.addEventListener('click', (e) => {
@@ -1539,17 +1658,18 @@
       if (!action || !id) return;
 
       const courseId = parseInt(id, 10);
-      if (action === 'delete') {
-        if (confirm('Delete this course?')) {
+      const course = courses.find((c) => c.id === courseId);
+      if (!course && action !== 'delete-course') return;
+
+      if (action === 'delete-course') {
+        if (confirm('Delete this course including all its content?')) {
           courses = courses.filter((c) => c.id !== courseId);
           if (editingCourseId === courseId) {
             resetCourseForm();
           }
           renderCourses();
         }
-      } else if (action === 'edit') {
-        const course = courses.find((c) => c.id === courseId);
-        if (!course) return;
+      } else if (action === 'edit-course') {
         editingCourseId = course.id;
         courseTitleInput.value = course.title;
         courseLevelInput.value = course.level || '';
@@ -1560,6 +1680,15 @@
         courseCancelEditBtn.style.display = 'inline-flex';
         courseTitleInput.focus();
         courseForm.scrollIntoView({ behavior: 'smooth' });
+      } else if (action === 'edit-content') {
+        selectedCourseIdForContent = course.id;
+        editingSectionIndex = null;
+        selectedSectionIndexForLessons = null;
+        editingLessonIndex = null;
+        resetSectionForm();
+        resetLessonForm();
+        renderCourseContentPanel();
+        courseContentHint.scrollIntoView({ behavior: 'smooth' });
       }
     });
 
@@ -1596,7 +1725,8 @@
           level,
           type,
           price,
-          subtitle
+          subtitle,
+          sections: []
         });
       }
 
@@ -1618,6 +1748,289 @@
       courseFilterType = e.target.value;
       renderCourses();
     });
+
+    // ===== COURSE CONTENT (SECTIONS + LESSONS) =====
+
+    function getSelectedCourse() {
+      if (selectedCourseIdForContent === null) return null;
+      return courses.find((c) => c.id === selectedCourseIdForContent) || null;
+    }
+
+    function renderCourseContentPanel() {
+      const course = getSelectedCourse();
+      if (!course) {
+        courseContentHint.textContent =
+          'Koi course select nahi hai. Table me "Edit content" button pe click karo.';
+        sectionsTable.style.display = 'none';
+        sectionForm.style.display = 'none';
+        lessonPanelHint.textContent =
+          'Koi section select nahi hai. Upar wali list me "Edit lessons" pe click karo.';
+        lessonsTable.style.display = 'none';
+        lessonForm.style.display = 'none';
+        return;
+      }
+
+      ensureCourseSectionsArray(course);
+      const sections = course.sections;
+
+      courseContentHint.textContent = `Editing content for: ${course.title}`;
+      sectionsTable.style.display = 'table';
+      sectionForm.style.display = 'flex';
+
+      // sections render
+      sectionsTableBody.innerHTML = '';
+
+      if (sections.length === 0) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td colspan="4" style="text-align:center;color:#9ca3af;font-size:12px;padding:8px;">
+            No sections yet. Neeche se section add karo.
+          </td>
+        `;
+        sectionsTableBody.appendChild(tr);
+      } else {
+        sections.forEach((sec, idx) => {
+          const lessonCount = sec.lessons ? sec.lessons.length : 0;
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${idx + 1}</td>
+            <td>
+              <strong>${sec.title}</strong><br/>
+              <span style="font-size:11px;color:#6b7280;">${sec.description || ''}</span>
+            </td>
+            <td>${lessonCount}</td>
+            <td>
+              <button class="btn-secondary" data-action="edit-section" data-index="${idx}">Edit section</button>
+              <button class="btn-secondary" data-action="edit-lessons" data-index="${idx}">Edit lessons</button>
+              <button class="btn-secondary" data-action="delete-section" data-index="${idx}">Delete</button>
+            </td>
+          `;
+          sectionsTableBody.appendChild(tr);
+        });
+      }
+
+      // lessons panel render
+      const secIdx = selectedSectionIndexForLessons;
+      if (secIdx === null || secIdx < 0 || secIdx >= sections.length) {
+        lessonPanelHint.textContent =
+          'Koi section select nahi hai. Upar wali list me "Edit lessons" pe click karo.';
+        lessonsTable.style.display = 'none';
+        lessonForm.style.display = 'none';
+        return;
+      }
+
+      const activeSection = sections[secIdx];
+      const lessons = activeSection.lessons || [];
+
+      lessonPanelHint.textContent = `Editing lessons for section: ${activeSection.title}`;
+      lessonsTable.style.display = 'table';
+      lessonForm.style.display = 'flex';
+
+      lessonsTableBody.innerHTML = '';
+      if (lessons.length === 0) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td colspan="5" style="text-align:center;color:#9ca3af;font-size:12px;padding:8px;">
+            No lessons in this section yet. Neeche se lesson add karo.
+          </td>
+        `;
+        lessonsTableBody.appendChild(tr);
+      } else {
+        lessons.forEach((lesson, idx) => {
+          const typeLabel = lesson.type ? lesson.type.toUpperCase() : '-';
+          const lockedLabel = lesson.isLocked ? 'Yes' : 'No';
+
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${idx + 1}</td>
+            <td>${lesson.title}</td>
+            <td>${typeLabel}</td>
+            <td>${lockedLabel}</td>
+            <td>
+              <button class="btn-secondary" data-action="edit-lesson" data-index="${idx}">Edit</button>
+              <button class="btn-secondary" data-action="delete-lesson" data-index="${idx}">Delete</button>
+            </td>
+          `;
+          lessonsTableBody.appendChild(tr);
+        });
+      }
+    }
+
+    sectionsTableBody.addEventListener('click', (e) => {
+      const btn = e.target;
+      if (!(btn instanceof HTMLElement)) return;
+      const action = btn.getAttribute('data-action');
+      const indexStr = btn.getAttribute('data-index');
+      if (!action || indexStr === null) return;
+
+      const idx = parseInt(indexStr, 10);
+      const course = getSelectedCourse();
+      if (!course) return;
+      ensureCourseSectionsArray(course);
+      const sections = course.sections;
+
+      if (action === 'delete-section') {
+        if (confirm('Delete this section including all its lessons?')) {
+          sections.splice(idx, 1);
+          if (editingSectionIndex === idx) editingSectionIndex = null;
+          if (selectedSectionIndexForLessons === idx) {
+            selectedSectionIndexForLessons = null;
+            editingLessonIndex = null;
+          }
+          renderCourses();
+          renderCourseContentPanel();
+        }
+      } else if (action === 'edit-section') {
+        const sec = sections[idx];
+        editingSectionIndex = idx;
+        sectionTitleInput.value = sec.title;
+        sectionDescriptionInput.value = sec.description || '';
+        sectionSubmitBtn.textContent = 'Update section';
+        sectionCancelEditBtn.style.display = 'inline-flex';
+        sectionTitleInput.focus();
+      } else if (action === 'edit-lessons') {
+        selectedSectionIndexForLessons = idx;
+        editingLessonIndex = null;
+        resetLessonForm();
+        renderCourseContentPanel();
+        lessonPanelHint.scrollIntoView({ behavior: 'smooth' });
+      }
+    });
+
+    function resetSectionForm() {
+      editingSectionIndex = null;
+      sectionForm.reset();
+      sectionSubmitBtn.textContent = 'Save section';
+      sectionCancelEditBtn.style.display = 'none';
+    }
+
+    sectionCancelEditBtn.addEventListener('click', resetSectionForm);
+
+    sectionForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const course = getSelectedCourse();
+      if (!course) return;
+      ensureCourseSectionsArray(course);
+
+      const title = sectionTitleInput.value.trim();
+      const description = sectionDescriptionInput.value.trim();
+      if (!title) return;
+
+      const sections = course.sections;
+
+      if (editingSectionIndex !== null) {
+        sections[editingSectionIndex] = {
+          ...sections[editingSectionIndex],
+          title,
+          description
+        };
+      } else {
+        const newId = `s${sections.length + 1}`;
+        sections.push({
+          id: newId,
+          title,
+          description,
+          lessons: []
+        });
+      }
+
+      course.sections = sections;
+      resetSectionForm();
+      renderCourses();
+      renderCourseContentPanel();
+    });
+
+    // lessons logic
+    lessonsTableBody.addEventListener('click', (e) => {
+      const btn = e.target;
+      if (!(btn instanceof HTMLElement)) return;
+      const action = btn.getAttribute('data-action');
+      const indexStr = btn.getAttribute('data-index');
+      if (!action || indexStr === null) return;
+
+      const idx = parseInt(indexStr, 10);
+      const course = getSelectedCourse();
+      if (!course) return;
+      ensureCourseSectionsArray(course);
+
+      const secIdx = selectedSectionIndexForLessons;
+      if (secIdx === null) return;
+      const section = course.sections[secIdx];
+      const lessons = section.lessons || [];
+
+      if (action === 'delete-lesson') {
+        if (confirm('Delete this lesson?')) {
+          lessons.splice(idx, 1);
+          section.lessons = lessons;
+          editingLessonIndex = null;
+          renderCourseContentPanel();
+        }
+      } else if (action === 'edit-lesson') {
+        const lesson = lessons[idx];
+        editingLessonIndex = idx;
+
+        lessonTitleInput.value = lesson.title;
+        lessonTypeSelect.value = lesson.type || 'video';
+        lessonDurationInput.value = lesson.durationLabel || '';
+        lessonIsLockedSelect.value = lesson.isLocked ? 'true' : 'false';
+
+        lessonSubmitBtn.textContent = 'Update lesson';
+        lessonCancelEditBtn.style.display = 'inline-flex';
+        lessonTitleInput.focus();
+      }
+    });
+
+    function resetLessonForm() {
+      editingLessonIndex = null;
+      lessonForm.reset();
+      lessonSubmitBtn.textContent = 'Save lesson';
+      lessonCancelEditBtn.style.display = 'none';
+    }
+
+    lessonCancelEditBtn.addEventListener('click', resetLessonForm);
+
+    lessonForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const course = getSelectedCourse();
+      if (!course) return;
+      ensureCourseSectionsArray(course);
+
+      const secIdx = selectedSectionIndexForLessons;
+      if (secIdx === null) return;
+      const section = course.sections[secIdx];
+      const lessons = section.lessons || [];
+
+      const title = lessonTitleInput.value.trim();
+      const type = lessonTypeSelect.value;
+      const durationLabel = lessonDurationInput.value.trim();
+      const isLocked = lessonIsLockedSelect.value === 'true';
+
+      if (!title) return;
+
+      if (editingLessonIndex !== null) {
+        lessons[editingLessonIndex] = {
+          ...lessons[editingLessonIndex],
+          title,
+          type,
+          durationLabel,
+          isLocked
+        };
+      } else {
+        const newId = `l${lessons.length + 1}`;
+        lessons.push({
+          id: newId,
+          title,
+          type,
+          durationLabel,
+          isLocked
+        });
+      }
+
+      section.lessons = lessons;
+      resetLessonForm();
+      renderCourseContentPanel();
+    });
+
 
     // ===== COURSE CONTENT PREVIEW LOGIC =====
     function refreshCourseContentCourseOptions() {
