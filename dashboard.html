@@ -411,7 +411,7 @@
     </main>
   </div>
 
- <script>
+<script>
 const API_BASE = "http://localhost:8080/api";
 
 /* ========= FIREBASE ========= */
@@ -430,21 +430,46 @@ const ALLOWED_ADMINS = ["admin@papi.in"];
 
 const overlay = document.getElementById("overlay");
 const logoutBtn = document.getElementById("logoutBtn");
+const adminEmailEl = document.getElementById("adminEmail");
+const avatarInitialEl = document.getElementById("avatarInitial");
 
-auth.onAuthStateChanged((user) => {
-  if (!user || !ALLOWED_ADMINS.includes(user.email)) {
-    if (user) auth.signOut();
-    window.location.href = "index.html";
-  } else {
-    overlay.style.display = "none";
-    bootstrapLoad();
+/* ========= NAV SWITCH FIX ========= */
+function setActiveSection(key) {
+  // left menu active
+  document.querySelectorAll(".nav-link").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.section === key);
+  });
+
+  // sections active
+  document.querySelectorAll(".section").forEach(sec => sec.classList.remove("active"));
+  const target = document.getElementById(`section-${key}`);
+  if (target) target.classList.add("active");
+}
+
+function initNav() {
+  document.querySelectorAll(".nav-link").forEach(btn => {
+    btn.addEventListener("click", () => setActiveSection(btn.dataset.section));
+  });
+}
+
+/* ========= SAFE FETCH ========= */
+async function api(path, options = {}) {
+  const res = await fetch(`${API_BASE}${path}`, {
+    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+    ...options,
+  });
+
+  // try parse json
+  let data = null;
+  const text = await res.text();
+  try { data = text ? JSON.parse(text) : null; } catch (_) {}
+
+  if (!res.ok) {
+    const msg = (data && data.error) ? data.error : `HTTP ${res.status}`;
+    throw new Error(msg);
   }
-});
-
-logoutBtn.onclick = async () => {
-  await auth.signOut();
-  window.location.href = "index.html";
-};
+  return data;
+}
 
 /* ========= GLOBAL STATE ========= */
 let courses = [];
@@ -453,61 +478,19 @@ let updates = [];
 let currentContentCourseId = null;
 let currentContentTestId = null;
 
-/* ========= FETCH ========= */
-async function fetchCourses() {
-  const res = await fetch(`${API_BASE}/courses`);
-  courses = await res.json();
+/* ========= LOAD DATA ========= */
+async function fetchCourses() { courses = await api("/courses"); }
+async function fetchTests() { tests = await api("/tests"); }
+async function fetchUpdates() { updates = await api("/updates"); }
+
+/* ========= STATS ========= */
+function renderStats() {
+  document.getElementById("stat-courses").textContent = courses.length;
+  document.getElementById("stat-tests").textContent = tests.length;
+  document.getElementById("stat-updates").textContent = updates.length;
 }
 
-async function fetchTests() {
-  const res = await fetch(`${API_BASE}/tests`);
-  tests = await res.json();
-}
-
-async function fetchUpdates() {
-  const res = await fetch(`${API_BASE}/updates`);
-  updates = await res.json();
-}
-
-/* ========= COURSE CONTENT BACKEND ========= */
-async function openCourseContentEditor(courseId) {
-  const res = await fetch(`${API_BASE}/courses/${courseId}/content`);
-  const data = await res.json();
-  currentContentCourseId = courseId;
-  alert("Loaded content from DB ✅");
-  console.log("Course content:", data);
-}
-
-async function saveCourseContent(payload) {
-  if (!currentContentCourseId) return;
-  await fetch(`${API_BASE}/courses/${currentContentCourseId}/content`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  alert("Course content saved to DB ✅");
-}
-
-/* ========= TEST QUESTIONS BACKEND ========= */
-async function openTestContentEditor(testId) {
-  const res = await fetch(`${API_BASE}/tests/${testId}/questions`);
-  const data = await res.json();
-  currentContentTestId = testId;
-  alert("Loaded test questions from DB ✅");
-  console.log("Test questions:", data);
-}
-
-async function saveTestQuestions(payload) {
-  if (!currentContentTestId) return;
-  await fetch(`${API_BASE}/tests/${currentContentTestId}/questions`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  alert("Test questions saved to DB ✅");
-}
-
-/* ========= COURSES CRUD ========= */
+/* ========= COURSES TABLE ========= */
 async function renderCourses() {
   await fetchCourses();
   const tbody = document.querySelector("#coursesTable tbody");
@@ -519,23 +502,19 @@ async function renderCourses() {
       <td>${i + 1}</td>
       <td>${c.title}</td>
       <td>${c.level || "-"}</td>
-      <td>${c.type}</td>
+      <td>${c.type || "free"}</td>
       <td>₹${c.price || 0}</td>
       <td>
-        <button onclick="openCourseContentEditor(${c.id})">Content</button>
-        <button onclick="deleteCourse(${c.id})">Delete</button>
+        <button class="btn-secondary" onclick="openCourseContentEditor(${c.id})">Content</button>
+        <button class="btn-secondary" onclick="startEditCourse(${c.id})">Edit</button>
+        <button class="btn-secondary" onclick="deleteCourse(${c.id})">Delete</button>
       </td>
     `;
     tbody.appendChild(tr);
   });
 }
 
-async function deleteCourse(id) {
-  await fetch(`${API_BASE}/courses/${id}`, { method: "DELETE" });
-  renderCourses();
-}
-
-/* ========= TESTS CRUD ========= */
+/* ========= TESTS TABLE ========= */
 async function renderTests() {
   await fetchTests();
   const tbody = document.querySelector("#testsTable tbody");
@@ -547,24 +526,20 @@ async function renderTests() {
       <td>${i + 1}</td>
       <td>${t.name}</td>
       <td>${t.course || "-"}</td>
-      <td>${t.questions || "-"}</td>
+      <td>${t.questions ?? "-"}</td>
       <td>${t.duration || "-"}</td>
-      <td>${t.status}</td>
+      <td>${t.status || "free"}</td>
       <td>
-        <button onclick="openTestContentEditor(${t.id})">Content</button>
-        <button onclick="deleteTest(${t.id})">Delete</button>
+        <button class="btn-secondary" onclick="openTestContentEditor(${t.id})">Content</button>
+        <button class="btn-secondary" onclick="startEditTest(${t.id})">Edit</button>
+        <button class="btn-secondary" onclick="deleteTest(${t.id})">Delete</button>
       </td>
     `;
     tbody.appendChild(tr);
   });
 }
 
-async function deleteTest(id) {
-  await fetch(`${API_BASE}/tests/${id}`, { method: "DELETE" });
-  renderTests();
-}
-
-/* ========= UPDATES ========= */
+/* ========= UPDATES TABLE ========= */
 async function renderUpdates() {
   await fetchUpdates();
   const tbody = document.querySelector("#updatesTable tbody");
@@ -577,18 +552,264 @@ async function renderUpdates() {
       <td>${u.title}</td>
       <td>${u.audience || "All"}</td>
       <td>${u.created_at || "-"}</td>
+      <td>
+        <button class="btn-secondary" onclick="startEditUpdate(${u.id})">Edit</button>
+        <button class="btn-secondary" onclick="deleteUpdate(${u.id})">Delete</button>
+      </td>
     `;
     tbody.appendChild(tr);
   });
 }
 
+/* ========= CRUD - COURSES ========= */
+let editingCourseId = null;
+
+document.getElementById("courseForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const payload = {
+    title: document.getElementById("courseTitle").value.trim(),
+    level: document.getElementById("courseLevel").value.trim(),
+    type: document.getElementById("courseType").value,
+    price: Number(document.getElementById("coursePrice").value || 0),
+    subtitle: document.getElementById("courseSubtitle").value.trim(),
+  };
+
+  try {
+    if (!payload.title) return alert("Course title required");
+
+    if (editingCourseId) {
+      await api(`/courses/${editingCourseId}`, { method: "PUT", body: JSON.stringify(payload) });
+      editingCourseId = null;
+      document.getElementById("courseCancelEditBtn").style.display = "none";
+    } else {
+      await api("/courses", { method: "POST", body: JSON.stringify(payload) });
+    }
+
+    e.target.reset();
+    await renderCourses();
+    renderStats();
+    alert("Saved ✅");
+  } catch (err) {
+    alert("Course save failed: " + err.message);
+  }
+});
+
+function startEditCourse(id) {
+  const c = courses.find(x => x.id === id);
+  if (!c) return;
+
+  editingCourseId = id;
+  document.getElementById("courseTitle").value = c.title || "";
+  document.getElementById("courseLevel").value = c.level || "";
+  document.getElementById("courseType").value = c.type || "free";
+  document.getElementById("coursePrice").value = c.price || 0;
+  document.getElementById("courseSubtitle").value = c.subtitle || "";
+  document.getElementById("courseCancelEditBtn").style.display = "inline-flex";
+  setActiveSection("courses");
+  window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+}
+
+document.getElementById("courseCancelEditBtn").addEventListener("click", () => {
+  editingCourseId = null;
+  document.getElementById("courseForm").reset();
+  document.getElementById("courseCancelEditBtn").style.display = "none";
+});
+
+async function deleteCourse(id) {
+  if (!confirm("Delete this course?")) return;
+  try {
+    await api(`/courses/${id}`, { method: "DELETE" });
+    await renderCourses();
+    renderStats();
+  } catch (err) {
+    alert("Delete failed: " + err.message);
+  }
+}
+
+/* ========= CRUD - TESTS ========= */
+let editingTestId = null;
+
+document.getElementById("testForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const payload = {
+    name: document.getElementById("testName").value.trim(),
+    course: document.getElementById("testCourse").value.trim(),
+    questions: Number(document.getElementById("testQuestions").value || 0),
+    duration: document.getElementById("testDuration").value.trim(),
+    status: document.getElementById("testStatus").value,
+  };
+
+  try {
+    if (!payload.name) return alert("Test title required");
+
+    if (editingTestId) {
+      await api(`/tests/${editingTestId}`, { method: "PUT", body: JSON.stringify(payload) });
+      editingTestId = null;
+      document.getElementById("testCancelEditBtn").style.display = "none";
+    } else {
+      await api("/tests", { method: "POST", body: JSON.stringify(payload) });
+    }
+
+    e.target.reset();
+    await renderTests();
+    renderStats();
+    alert("Saved ✅");
+  } catch (err) {
+    alert("Test save failed: " + err.message);
+  }
+});
+
+function startEditTest(id) {
+  const t = tests.find(x => x.id === id);
+  if (!t) return;
+
+  editingTestId = id;
+  document.getElementById("testName").value = t.name || "";
+  document.getElementById("testCourse").value = t.course || "";
+  document.getElementById("testQuestions").value = t.questions || 0;
+  document.getElementById("testDuration").value = t.duration || "";
+  document.getElementById("testStatus").value = t.status || "free";
+  document.getElementById("testCancelEditBtn").style.display = "inline-flex";
+  setActiveSection("tests");
+  window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+}
+
+document.getElementById("testCancelEditBtn").addEventListener("click", () => {
+  editingTestId = null;
+  document.getElementById("testForm").reset();
+  document.getElementById("testCancelEditBtn").style.display = "none";
+});
+
+async function deleteTest(id) {
+  if (!confirm("Delete this test?")) return;
+  try {
+    await api(`/tests/${id}`, { method: "DELETE" });
+    await renderTests();
+    renderStats();
+  } catch (err) {
+    alert("Delete failed: " + err.message);
+  }
+}
+
+/* ========= CRUD - UPDATES ========= */
+let editingUpdateId = null;
+
+document.getElementById("updateForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const payload = {
+    title: document.getElementById("updateTitle").value.trim(),
+    audience: document.getElementById("updateAudience").value.trim(),
+    body: document.getElementById("updateBody").value.trim(),
+  };
+
+  try {
+    if (!payload.title) return alert("Update title required");
+
+    if (editingUpdateId) {
+      await api(`/updates/${editingUpdateId}`, { method: "PUT", body: JSON.stringify(payload) });
+      editingUpdateId = null;
+      document.getElementById("updateCancelEditBtn").style.display = "none";
+    } else {
+      await api("/updates", { method: "POST", body: JSON.stringify(payload) });
+    }
+
+    e.target.reset();
+    await renderUpdates();
+    renderStats();
+    alert("Saved ✅");
+  } catch (err) {
+    alert("Update save failed: " + err.message);
+  }
+});
+
+function startEditUpdate(id) {
+  const u = updates.find(x => x.id === id);
+  if (!u) return;
+
+  editingUpdateId = id;
+  document.getElementById("updateTitle").value = u.title || "";
+  document.getElementById("updateAudience").value = u.audience || "";
+  document.getElementById("updateBody").value = u.body || "";
+  document.getElementById("updateCancelEditBtn").style.display = "inline-flex";
+  setActiveSection("updates");
+  window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+}
+
+document.getElementById("updateCancelEditBtn").addEventListener("click", () => {
+  editingUpdateId = null;
+  document.getElementById("updateForm").reset();
+  document.getElementById("updateCancelEditBtn").style.display = "none";
+});
+
+async function deleteUpdate(id) {
+  if (!confirm("Delete this update?")) return;
+  try {
+    await api(`/updates/${id}`, { method: "DELETE" });
+    await renderUpdates();
+    renderStats();
+  } catch (err) {
+    alert("Delete failed: " + err.message);
+  }
+}
+
+/* ========= CONTENT (Course/Test) ========= */
+async function openCourseContentEditor(courseId) {
+  try {
+    const data = await api(`/courses/${courseId}/content`);
+    currentContentCourseId = courseId;
+    alert("Loaded course content ✅ (check console)");
+    console.log("Course content:", data);
+  } catch (err) {
+    alert("Content load failed: " + err.message);
+  }
+}
+
+async function openTestContentEditor(testId) {
+  try {
+    const data = await api(`/tests/${testId}/questions`);
+    currentContentTestId = testId;
+    alert("Loaded test questions ✅ (check console)");
+    console.log("Test questions:", data);
+  } catch (err) {
+    alert("Questions load failed: " + err.message);
+  }
+}
+
 /* ========= BOOTSTRAP ========= */
 async function bootstrapLoad() {
-  await renderCourses();
-  await renderTests();
-  await renderUpdates();
+  try {
+    initNav();
+    await renderCourses();
+    await renderTests();
+    await renderUpdates();
+    renderStats();
+    setActiveSection("overview");
+  } catch (err) {
+    alert("Bootstrap failed: " + err.message + "\n\n(backend running? API_BASE correct?)");
+    console.error(err);
+  }
 }
-</script>
 
+/* ========= AUTH ========= */
+auth.onAuthStateChanged((user) => {
+  if (!user || !ALLOWED_ADMINS.includes(user.email)) {
+    if (user) auth.signOut();
+    window.location.href = "index.html";
+    return;
+  }
+
+  adminEmailEl.textContent = user.email;
+  avatarInitialEl.textContent = (user.email || "A").slice(0, 1).toUpperCase();
+
+  overlay.style.display = "none";
+  bootstrapLoad();
+});
+
+logoutBtn.onclick = async () => {
+  await auth.signOut();
+  window.location.href = "index.html";
+};
+</script>
 </body>
 </html>
+
