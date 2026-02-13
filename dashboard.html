@@ -411,961 +411,184 @@
     </main>
   </div>
 
-  <script>
-    // ✅ Local backend
-    const API_BASE = "http://localhost:8080/api";
+ <script>
+const API_BASE = "http://localhost:8080/api";
+
+/* ========= FIREBASE ========= */
+const firebaseConfig = {
+  apiKey: "AIzaSyBnDo5VJiM2noDWRWk281aVaUfPZ-sX08A",
+  authDomain: "papi0009.firebaseapp.com",
+  projectId: "papi0009",
+  storageBucket: "papi0009.firebasestorage.app",
+  messagingSenderId: "598318485319",
+  appId: "1:598318485319:web:b26e84907d49a92d42c662",
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const ALLOWED_ADMINS = ["admin@papi.in"];
+
+const overlay = document.getElementById("overlay");
+const logoutBtn = document.getElementById("logoutBtn");
+
+auth.onAuthStateChanged((user) => {
+  if (!user || !ALLOWED_ADMINS.includes(user.email)) {
+    if (user) auth.signOut();
+    window.location.href = "index.html";
+  } else {
+    overlay.style.display = "none";
+    bootstrapLoad();
+  }
+});
+
+logoutBtn.onclick = async () => {
+  await auth.signOut();
+  window.location.href = "index.html";
+};
+
+/* ========= GLOBAL STATE ========= */
+let courses = [];
+let tests = [];
+let updates = [];
+let currentContentCourseId = null;
+let currentContentTestId = null;
+
+/* ========= FETCH ========= */
+async function fetchCourses() {
+  const res = await fetch(`${API_BASE}/courses`);
+  courses = await res.json();
+}
+
+async function fetchTests() {
+  const res = await fetch(`${API_BASE}/tests`);
+  tests = await res.json();
+}
+
+async function fetchUpdates() {
+  const res = await fetch(`${API_BASE}/updates`);
+  updates = await res.json();
+}
+
+/* ========= COURSE CONTENT BACKEND ========= */
+async function openCourseContentEditor(courseId) {
+  const res = await fetch(`${API_BASE}/courses/${courseId}/content`);
+  const data = await res.json();
+  currentContentCourseId = courseId;
+  alert("Loaded content from DB ✅");
+  console.log("Course content:", data);
+}
+
+async function saveCourseContent(payload) {
+  if (!currentContentCourseId) return;
+  await fetch(`${API_BASE}/courses/${currentContentCourseId}/content`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  alert("Course content saved to DB ✅");
+}
+
+/* ========= TEST QUESTIONS BACKEND ========= */
+async function openTestContentEditor(testId) {
+  const res = await fetch(`${API_BASE}/tests/${testId}/questions`);
+  const data = await res.json();
+  currentContentTestId = testId;
+  alert("Loaded test questions from DB ✅");
+  console.log("Test questions:", data);
+}
+
+async function saveTestQuestions(payload) {
+  if (!currentContentTestId) return;
+  await fetch(`${API_BASE}/tests/${currentContentTestId}/questions`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  alert("Test questions saved to DB ✅");
+}
+
+/* ========= COURSES CRUD ========= */
+async function renderCourses() {
+  await fetchCourses();
+  const tbody = document.querySelector("#coursesTable tbody");
+  tbody.innerHTML = "";
+
+  courses.forEach((c, i) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${i + 1}</td>
+      <td>${c.title}</td>
+      <td>${c.level || "-"}</td>
+      <td>${c.type}</td>
+      <td>₹${c.price || 0}</td>
+      <td>
+        <button onclick="openCourseContentEditor(${c.id})">Content</button>
+        <button onclick="deleteCourse(${c.id})">Delete</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+async function deleteCourse(id) {
+  await fetch(`${API_BASE}/courses/${id}`, { method: "DELETE" });
+  renderCourses();
+}
+
+/* ========= TESTS CRUD ========= */
+async function renderTests() {
+  await fetchTests();
+  const tbody = document.querySelector("#testsTable tbody");
+  tbody.innerHTML = "";
+
+  tests.forEach((t, i) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${i + 1}</td>
+      <td>${t.name}</td>
+      <td>${t.course || "-"}</td>
+      <td>${t.questions || "-"}</td>
+      <td>${t.duration || "-"}</td>
+      <td>${t.status}</td>
+      <td>
+        <button onclick="openTestContentEditor(${t.id})">Content</button>
+        <button onclick="deleteTest(${t.id})">Delete</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+async function deleteTest(id) {
+  await fetch(`${API_BASE}/tests/${id}`, { method: "DELETE" });
+  renderTests();
+}
+
+/* ========= UPDATES ========= */
+async function renderUpdates() {
+  await fetchUpdates();
+  const tbody = document.querySelector("#updatesTable tbody");
+  tbody.innerHTML = "";
+
+  updates.forEach((u, i) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${i + 1}</td>
+      <td>${u.title}</td>
+      <td>${u.audience || "All"}</td>
+      <td>${u.created_at || "-"}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+/* ========= BOOTSTRAP ========= */
+async function bootstrapLoad() {
+  await renderCourses();
+  await renderTests();
+  await renderUpdates();
+}
+</script>
 
-    // 🔐 Firebase config
-    const firebaseConfig = {
-      apiKey: "AIzaSyBnDo5VJiM2noDWRWk281aVaUfPZ-sX08A",
-      authDomain: "papi0009.firebaseapp.com",
-      projectId: "papi0009",
-      storageBucket: "papi0009.firebasestorage.app",
-      messagingSenderId: "598318485319",
-      appId: "1:598318485319:web:b26e84907d49a92d42c662",
-    };
-
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-
-    const ALLOWED_ADMINS = ["admin@papi.in"];
-
-    const overlay = document.getElementById('overlay');
-    const adminEmailSpan = document.getElementById('adminEmail');
-    const avatarInitial = document.getElementById('avatarInitial');
-    const logoutBtn = document.getElementById('logoutBtn');
-
-    auth.onAuthStateChanged((user) => {
-      if (!user || !user.email || !ALLOWED_ADMINS.includes(user.email)) {
-        if (user) auth.signOut();
-        window.location.href = 'index.html';
-      } else {
-        adminEmailSpan.textContent = user.email;
-        avatarInitial.textContent = user.email.charAt(0).toUpperCase();
-        overlay.style.display = 'none';
-        // After auth ok, load data from backend
-        bootstrapLoad();
-      }
-    });
-
-    logoutBtn.addEventListener('click', async () => {
-      await auth.signOut();
-      window.location.href = 'index.html';
-    });
-
-    // ===== BACKEND STATE =====
-    let courses = [];
-    let tests = [];
-    let updates = [];
-
-    // ===== NAVIGATION =====
-    const navLinks = document.querySelectorAll('.nav-link');
-    const sections = document.querySelectorAll('.section');
-
-    navLinks.forEach((link) => {
-      link.addEventListener('click', () => {
-        const target = link.getAttribute('data-section');
-        navLinks.forEach((l) => l.classList.remove('active'));
-        link.classList.add('active');
-
-        sections.forEach((sec) => {
-          if (sec.id === 'section-' + target) sec.classList.add('active');
-          else sec.classList.remove('active');
-        });
-      });
-    });
-
-    // ===== COURSES =====
-    const coursesTableBody = document.querySelector('#coursesTable tbody');
-    const courseForm = document.getElementById('courseForm');
-    const statCourses = document.getElementById('stat-courses');
-    const courseTitleInput = document.getElementById('courseTitle');
-    const courseLevelInput = document.getElementById('courseLevel');
-    const courseTypeInput = document.getElementById('courseType');
-    const coursePriceInput = document.getElementById('coursePrice');
-    const courseSubtitleInput = document.getElementById('courseSubtitle');
-    const courseSubmitBtn = document.getElementById('courseSubmitBtn');
-    const courseCancelEditBtn = document.getElementById('courseCancelEditBtn');
-    const addCourseScrollBtn = document.getElementById('addCourseScrollBtn');
-    const courseSearchInput = document.getElementById('courseSearch');
-    const courseFilterTypeSelect = document.getElementById('courseFilterType');
-
-    let editingCourseId = null;
-    let courseSearchTerm = '';
-    let courseFilterType = 'all';
-
-    async function fetchCourses() {
-      const res = await fetch(`${API_BASE}/courses`);
-      if (!res.ok) throw new Error("Failed to load courses");
-      courses = await res.json();
-    }
-
-    function renderCourses() {
-      coursesTableBody.innerHTML = '';
-
-      const filtered = courses.filter((course) => {
-        const term = courseSearchTerm;
-        const matchesSearch =
-          !term ||
-          (course.title && course.title.toLowerCase().includes(term)) ||
-          (course.subtitle && course.subtitle.toLowerCase().includes(term));
-
-        const matchesType = courseFilterType === 'all' || course.type === courseFilterType;
-        return matchesSearch && matchesType;
-      });
-
-      if (filtered.length === 0) {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td colspan="6" style="text-align:center;color:#9ca3af;font-size:12px;padding:16px;">
-            No courses found. Try changing search/filter.
-          </td>`;
-        coursesTableBody.appendChild(tr);
-      } else {
-        filtered.forEach((course, index) => {
-          const tr = document.createElement('tr');
-          const isFree = course.type === 'free';
-          tr.innerHTML = `
-            <td>${index + 1}</td>
-            <td>
-              <strong>${escapeHtml(course.title)}</strong><br/>
-              <span style="font-size:11px;color:#6b7280;">${escapeHtml(course.subtitle || '')}</span>
-            </td>
-            <td>${escapeHtml(course.level || '-')}</td>
-            <td>
-              <span class="badge ${isFree ? 'badge-free' : 'badge-paid'}">
-                ${isFree ? 'Free' : 'Paid'}
-              </span>
-            </td>
-            <td>₹${course.price || 0}</td>
-            <td>
-              <button class="btn-secondary" data-action="content" data-id="${course.id}">Content</button>
-              <button class="btn-secondary" data-action="edit" data-id="${course.id}">Edit</button>
-              <button class="btn-secondary" data-action="delete" data-id="${course.id}">Delete</button>
-            </td>
-          `;
-          coursesTableBody.appendChild(tr);
-        });
-      }
-
-      statCourses.textContent = courses.length.toString();
-    }
-
-    coursesTableBody.addEventListener('click', async (e) => {
-      const btn = e.target;
-      if (!(btn instanceof HTMLElement)) return;
-      const action = btn.getAttribute('data-action');
-      const id = btn.getAttribute('data-id');
-      if (!action || !id) return;
-
-      const courseId = parseInt(id, 10);
-
-      if (action === 'delete') {
-        if (confirm('Delete this course?')) {
-          await fetch(`${API_BASE}/courses/${courseId}`, { method: "DELETE" });
-          if (editingCourseId === courseId) resetCourseForm();
-          if (currentContentCourseId === courseId) hideCourseContentEditor();
-          await fetchCourses();
-          renderCourses();
-        }
-      } else if (action === 'edit') {
-        const course = courses.find((c) => c.id === courseId);
-        if (!course) return;
-        editingCourseId = course.id;
-        courseTitleInput.value = course.title || '';
-        courseLevelInput.value = course.level || '';
-        courseTypeInput.value = course.type || 'free';
-        coursePriceInput.value = course.price || 0;
-        courseSubtitleInput.value = course.subtitle || '';
-        courseSubmitBtn.textContent = 'Update course';
-        courseCancelEditBtn.style.display = 'inline-flex';
-        courseTitleInput.focus();
-        courseForm.scrollIntoView({ behavior: 'smooth' });
-      } else if (action === 'content') {
-        openCourseContentEditor(courseId);
-      }
-    });
-
-    function resetCourseForm() {
-      editingCourseId = null;
-      courseForm.reset();
-      courseSubmitBtn.textContent = 'Save course';
-      courseCancelEditBtn.style.display = 'none';
-    }
-
-    courseCancelEditBtn.addEventListener('click', resetCourseForm);
-
-    courseForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-
-      const title = courseTitleInput.value.trim();
-      if (!title) return;
-
-      const payload = {
-        title,
-        level: courseLevelInput.value.trim(),
-        type: courseTypeInput.value,
-        price: coursePriceInput.value ? Number(coursePriceInput.value) : 0,
-        subtitle: courseSubtitleInput.value.trim(),
-      };
-
-      if (editingCourseId) {
-        await fetch(`${API_BASE}/courses/${editingCourseId}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-      } else {
-        await fetch(`${API_BASE}/courses`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-      }
-
-      resetCourseForm();
-      await fetchCourses();
-      renderCourses();
-    });
-
-    addCourseScrollBtn.addEventListener('click', () => {
-      courseForm.scrollIntoView({ behavior: 'smooth' });
-      courseTitleInput.focus();
-    });
-
-    courseSearchInput.addEventListener('input', (e) => {
-      courseSearchTerm = e.target.value.toLowerCase();
-      renderCourses();
-    });
-
-    courseFilterTypeSelect.addEventListener('change', (e) => {
-      courseFilterType = e.target.value;
-      renderCourses();
-    });
-
-    // ===== COURSE CONTENT EDITOR (LOCAL ONLY) =====
-    const courseContentEditor = document.getElementById('courseContentEditor');
-    const ccCourseTitleSpan = document.getElementById('ccCourseTitle');
-    const ccSectionsContainer = document.getElementById('ccSectionsContainer');
-    const ccAddSectionBtn = document.getElementById('ccAddSectionBtn');
-    const ccJsonOutput = document.getElementById('ccJsonOutput');
-    const ccShowJsonBtn = document.getElementById('ccShowJsonBtn');
-    const ccCopyJsonBtn = document.getElementById('ccCopyJsonBtn');
-
-    let courseContents = {};
-    let currentContentCourseId = null;
-
-    function hideCourseContentEditor() {
-      currentContentCourseId = null;
-      courseContentEditor.style.display = 'none';
-      ccCourseTitleSpan.textContent = '';
-      ccSectionsContainer.innerHTML = '';
-      if (ccJsonOutput) {
-        ccJsonOutput.value = '';
-        ccJsonOutput.style.display = 'none';
-        if (ccShowJsonBtn) ccShowJsonBtn.textContent = 'Show JSON';
-      }
-    }
-
-    function openCourseContentEditor(courseId) {
-      const course = courses.find((c) => c.id === courseId);
-      if (!course) return;
-
-      currentContentCourseId = courseId;
-      ccCourseTitleSpan.textContent = course.title;
-
-      if (!courseContents[courseId]) courseContents[courseId] = [];
-      renderCourseContent();
-      courseContentEditor.style.display = 'block';
-      courseContentEditor.scrollIntoView({ behavior: 'smooth' });
-    }
-
-    function getCurrentCourseContentPayload() {
-      if (!currentContentCourseId) return null;
-      const course = courses.find((c) => c.id === currentContentCourseId);
-      if (!course) return null;
-
-      const sections = (courseContents[currentContentCourseId] || []).map((sec) => ({
-        id: sec.id,
-        title: sec.title,
-        description: sec.description,
-        lessons: (sec.lessons || []).map((lesson) => ({
-          id: lesson.id,
-          title: lesson.title,
-          type: lesson.type,
-          durationLabel: lesson.durationLabel,
-          contentUrl: lesson.contentUrl,
-          isLocked: !!lesson.isLocked
-        }))
-      }));
-
-      return { courseId: course.id, courseTitle: course.title, sections };
-    }
-
-    function updateJsonPreview() {
-      if (!ccJsonOutput) return;
-      const payload = getCurrentCourseContentPayload();
-      ccJsonOutput.value = payload ? JSON.stringify(payload, null, 2) : '';
-    }
-
-    function renderCourseContent() {
-      if (!currentContentCourseId) return;
-      const sections = courseContents[currentContentCourseId] || [];
-
-      if (sections.length === 0) {
-        ccSectionsContainer.innerHTML = `
-          <p class="muted" style="margin-top:4px;">
-            Abhi koi section nahi hai. "Add section" se naya section banao.
-          </p>
-        `;
-        updateJsonPreview();
-        return;
-      }
-
-      let html = '';
-      sections.forEach((sec, index) => {
-        html += `
-          <div class="cc-section-card">
-            <div class="cc-section-header">
-              <div>
-                <div class="cc-section-title">${index + 1}. ${escapeHtml(sec.title)}</div>
-                ${sec.description ? `<div class="cc-section-desc">${escapeHtml(sec.description)}</div>` : ''}
-              </div>
-              <div class="cc-section-actions">
-                <button class="btn-secondary" data-cc-action="add-lesson" data-sec-id="${sec.id}">+ Lesson</button>
-                <button class="btn-secondary" data-cc-action="edit-section" data-sec-id="${sec.id}">Edit</button>
-                <button class="btn-secondary" data-cc-action="delete-section" data-sec-id="${sec.id}">Delete</button>
-              </div>
-            </div>
-            <div class="cc-lessons-wrapper">${renderLessonsTable(sec)}</div>
-          </div>
-        `;
-      });
-
-      ccSectionsContainer.innerHTML = html;
-      updateJsonPreview();
-    }
-
-    function renderLessonsTable(sec) {
-      const lessons = sec.lessons || [];
-      if (lessons.length === 0) {
-        return `<div class="muted">No lessons yet. "Add Lesson" se add karo.</div>`;
-      }
-
-      let rows = '';
-      lessons.forEach((lesson, index) => {
-        const lockClass = lesson.isLocked ? 'cc-tag-lock' : 'cc-tag-unlock';
-        const lockText = lesson.isLocked ? 'Locked' : 'Free';
-        rows += `
-          <tr>
-            <td>${index + 1}</td>
-            <td>${escapeHtml(lesson.title)}</td>
-            <td>${escapeHtml(lesson.type)}</td>
-            <td>${escapeHtml(lesson.durationLabel || '')}</td>
-            <td><span class="${lockClass}">${lockText}</span></td>
-            <td>
-              <button class="btn-secondary" data-cc-action="edit-lesson" data-sec-id="${sec.id}" data-lesson-id="${lesson.id}">Edit</button>
-              <button class="btn-secondary" data-cc-action="delete-lesson" data-sec-id="${sec.id}" data-lesson-id="${lesson.id}">Delete</button>
-            </td>
-          </tr>
-        `;
-      });
-
-      return `
-        <table class="cc-lessons-table">
-          <thead>
-            <tr>
-              <th>#</th><th>Title</th><th>Type</th><th>Duration</th><th>Lock</th><th style="width:150px;">Actions</th>
-            </tr>
-          </thead>
-          <tbody>${rows}</tbody>
-        </table>
-      `;
-    }
-
-    ccAddSectionBtn.addEventListener('click', () => {
-      if (!currentContentCourseId) { alert('Pehle kisi course ka "Content" click karo.'); return; }
-      const title = prompt('Section title (e.g. "Kinematics")');
-      if (!title) return;
-      const description = prompt('Section description (optional):') || '';
-
-      const sections = courseContents[currentContentCourseId] || [];
-      const newId = (sections[sections.length - 1]?.id || 0) + 1;
-
-      sections.push({ id: newId, title: title.trim(), description: description.trim(), lessons: [] });
-      courseContents[currentContentCourseId] = sections;
-      renderCourseContent();
-    });
-
-    ccSectionsContainer.addEventListener('click', (e) => {
-      const btn = e.target;
-      if (!(btn instanceof HTMLElement)) return;
-      const action = btn.getAttribute('data-cc-action');
-      if (!action) return;
-
-      const secIdAttr = btn.getAttribute('data-sec-id');
-      const lessonIdAttr = btn.getAttribute('data-lesson-id');
-      const secId = secIdAttr ? parseInt(secIdAttr, 10) : null;
-      const lessonId = lessonIdAttr ? parseInt(lessonIdAttr, 10) : null;
-
-      const sections = courseContents[currentContentCourseId] || [];
-      const secIndex = sections.findIndex((s) => s.id === secId);
-      if (secIndex === -1 && secId !== null) return;
-      const section = secId !== null ? sections[secIndex] : null;
-
-      if (action === 'delete-section') {
-        if (!section) return;
-        if (confirm('Delete this section and all lessons?')) {
-          sections.splice(secIndex, 1);
-          courseContents[currentContentCourseId] = sections;
-          renderCourseContent();
-        }
-      } else if (action === 'edit-section') {
-        if (!section) return;
-        const newTitle = prompt('Section title:', section.title) || section.title;
-        const newDesc = prompt('Section description:', section.description || '') || '';
-        section.title = newTitle.trim();
-        section.description = newDesc.trim();
-        renderCourseContent();
-      } else if (action === 'add-lesson') {
-        if (!section) return;
-        addOrEditLesson(section, null);
-      } else if (action === 'edit-lesson') {
-        if (!section || lessonId == null) return;
-        const lesson = section.lessons.find((l) => l.id === lessonId);
-        if (!lesson) return;
-        addOrEditLesson(section, lesson);
-      } else if (action === 'delete-lesson') {
-        if (!section || lessonId == null) return;
-        if (confirm('Delete this lesson?')) {
-          section.lessons = section.lessons.filter((l) => l.id !== lessonId);
-          renderCourseContent();
-        }
-      }
-    });
-
-    function addOrEditLesson(section, existingLesson) {
-      const prev = existingLesson || {};
-      const title = prompt('Lesson title:', prev.title || '');
-      if (!title) return;
-
-      const typeRaw = prompt('Type (video/pdf/notes/quiz):', prev.type || 'video') || 'video';
-      const type = typeRaw.trim().toLowerCase();
-      if (!['video', 'pdf', 'notes', 'quiz'].includes(type)) {
-        alert('Type must be: video, pdf, notes, quiz');
-        return;
-      }
-
-      const durationLabel = prompt('Duration label (optional):', prev.durationLabel || '') || '';
-      const contentUrl = prompt('Content URL (optional):', prev.contentUrl || '') || '';
-      const lockAnswer = prompt('Locked for premium only? (yes/no):', prev.isLocked ? 'yes' : 'no') || 'no';
-      const isLocked = lockAnswer.trim().toLowerCase().startsWith('y');
-
-      if (existingLesson) {
-        existingLesson.title = title.trim();
-        existingLesson.type = type;
-        existingLesson.durationLabel = durationLabel.trim();
-        existingLesson.contentUrl = contentUrl.trim();
-        existingLesson.isLocked = isLocked;
-      } else {
-        const lessons = section.lessons || [];
-        const newLessonId = (lessons[lessons.length - 1]?.id || 0) + 1;
-        lessons.push({ id: newLessonId, title: title.trim(), type, durationLabel: durationLabel.trim(), contentUrl: contentUrl.trim(), isLocked });
-        section.lessons = lessons;
-      }
-      renderCourseContent();
-    }
-
-    if (ccShowJsonBtn) {
-      ccShowJsonBtn.addEventListener('click', () => {
-        if (!ccJsonOutput) return;
-        const isHidden = ccJsonOutput.style.display === 'none' || ccJsonOutput.style.display === '';
-        if (isHidden) { updateJsonPreview(); ccJsonOutput.style.display = 'block'; ccShowJsonBtn.textContent = 'Hide JSON'; }
-        else { ccJsonOutput.style.display = 'none'; ccShowJsonBtn.textContent = 'Show JSON'; }
-      });
-    }
-    if (ccCopyJsonBtn) {
-      ccCopyJsonBtn.addEventListener('click', async () => {
-        if (!ccJsonOutput.value) updateJsonPreview();
-        try { await navigator.clipboard.writeText(ccJsonOutput.value || ''); alert('Course content JSON copied!'); }
-        catch { alert('Copy failed. Manually copy JSON.'); }
-      });
-    }
-
-    // ===== TESTS =====
-    const testsTableBody = document.querySelector('#testsTable tbody');
-    const testForm = document.getElementById('testForm');
-    const statTests = document.getElementById('stat-tests');
-    const testNameInput = document.getElementById('testName');
-    const testCourseInput = document.getElementById('testCourse');
-    const testQuestionsInput = document.getElementById('testQuestions');
-    const testDurationInput = document.getElementById('testDuration');
-    const testStatusInput = document.getElementById('testStatus');
-    const testSubmitBtn = document.getElementById('testSubmitBtn');
-    const testCancelEditBtn = document.getElementById('testCancelEditBtn');
-    const addTestScrollBtn = document.getElementById('addTestScrollBtn');
-    const testSearchInput = document.getElementById('testSearch');
-    const testFilterStatusSelect = document.getElementById('testFilterStatus');
-
-    let editingTestId = null;
-    let testSearchTerm = '';
-    let testFilterStatus = 'all';
-
-    const testContentEditor = document.getElementById('testContentEditor');
-    const tcTestTitleSpan = document.getElementById('tcTestTitle');
-    const tcQuestionsContainer = document.getElementById('tcQuestionsContainer');
-    const tcAddQuestionBtn = document.getElementById('tcAddQuestionBtn');
-
-    let testsContents = {};
-    let currentContentTestId = null;
-
-    async function fetchTests() {
-      const res = await fetch(`${API_BASE}/tests`);
-      if (!res.ok) throw new Error("Failed to load tests");
-      tests = await res.json();
-    }
-
-    function hideTestContentEditor() {
-      currentContentTestId = null;
-      testContentEditor.style.display = 'none';
-      tcTestTitleSpan.textContent = '';
-      tcQuestionsContainer.innerHTML = '';
-    }
-
-    function openTestContentEditor(testId) {
-      const t = tests.find((x) => x.id === testId);
-      if (!t) return;
-      currentContentTestId = testId;
-      tcTestTitleSpan.textContent = t.name;
-      if (!testsContents[testId]) testsContents[testId] = [];
-      renderTestContent();
-      testContentEditor.style.display = 'block';
-      testContentEditor.scrollIntoView({ behavior: 'smooth' });
-    }
-
-    function renderTestContent() {
-      if (!currentContentTestId) return;
-      const questions = testsContents[currentContentTestId] || [];
-      if (questions.length === 0) {
-        tcQuestionsContainer.innerHTML = `<p class="muted" style="margin-top:4px;">Abhi koi question nahi hai. "Add question" se MCQ add karo.</p>`;
-        return;
-      }
-
-      let html = '';
-      questions.forEach((q, index) => {
-        const marksText = (q.marks ?? q.marks === 0) ? `Marks: ${q.marks}` : '';
-        const negText = (q.negativeMarks ?? q.negativeMarks === 0) ? (q.negativeMarks ? ` | Negative: -${q.negativeMarks}` : ' | Negative: 0') : '';
-        const metaLine = (marksText || negText) ? (marksText + negText) : '';
-
-        let optionsRows = '';
-        (q.options || []).forEach((opt) => {
-          const badge = opt.isCorrect ? '<span class="cc-tag-unlock">Correct</span>' : '<span class="cc-tag-lock">Incorrect</span>';
-          optionsRows += `<tr><td>${escapeHtml(opt.label)}</td><td>${escapeHtml(opt.text)}</td><td>${badge}</td></tr>`;
-        });
-        if (!optionsRows) optionsRows = `<tr><td colspan="3" style="font-size:11px;color:#9ca3af;padding:6px 8px;">No options added.</td></tr>`;
-
-        html += `
-          <div class="cc-section-card">
-            <div class="cc-section-header">
-              <div>
-                <div class="cc-section-title">Q${index + 1}. ${escapeHtml(q.text)}</div>
-                ${metaLine ? `<div class="cc-section-desc">${metaLine}</div>` : ''}
-                ${q.explanation ? `<div class="cc-section-desc">Explanation: ${escapeHtml(q.explanation)}</div>` : ''}
-              </div>
-              <div class="cc-section-actions">
-                <button class="btn-secondary" data-tc-action="edit-question" data-qid="${q.id}">Edit</button>
-                <button class="btn-secondary" data-tc-action="delete-question" data-qid="${q.id}">Delete</button>
-              </div>
-            </div>
-            <div class="cc-lessons-wrapper">
-              <table class="cc-lessons-table">
-                <thead>
-                  <tr><th style="width:60px;">Option</th><th>Text</th><th style="width:90px;">Correct?</th></tr>
-                </thead>
-                <tbody>${optionsRows}</tbody>
-              </table>
-            </div>
-          </div>
-        `;
-      });
-
-      tcQuestionsContainer.innerHTML = html;
-    }
-
-    function addOrEditQuestion(existingQuestion) {
-      if (!currentContentTestId) { alert('Pehle kisi test ka "Content" click karo.'); return; }
-      const prev = existingQuestion || {};
-      const questionsArr = testsContents[currentContentTestId] || [];
-
-      const text = prompt('Question text:', prev.text || '');
-      if (!text) return;
-
-      const marksRaw = prompt('Marks (e.g. 4):', prev.marks != null ? String(prev.marks) : '1');
-      const marks = marksRaw ? Number(marksRaw) : null;
-
-      const negRaw = prompt('Negative marks (e.g. 1 or 0):', prev.negativeMarks != null ? String(prev.negativeMarks) : '0');
-      const negativeMarks = (negRaw !== null && negRaw !== '') ? Number(negRaw) : null;
-
-      const explanation = prompt('Explanation (optional):', prev.explanation || '') || '';
-
-      let optionsCountRaw = prompt('Number of options (3–6):', prev.options ? String(prev.options.length) : '4');
-      let optionsCount = optionsCountRaw ? Number(optionsCountRaw) : 4;
-      if (isNaN(optionsCount) || optionsCount < 3 || optionsCount > 6) optionsCount = 4;
-
-      const labels = ['A','B','C','D','E','F'];
-      const options = [];
-      for (let i = 0; i < optionsCount; i++) {
-        const prevOpt = prev.options && prev.options[i] ? prev.options[i].text : '';
-        const optText = prompt(`Option ${labels[i]} text:`, prevOpt || '');
-        if (!optText) { alert('Option empty, cancel.'); return; }
-        options.push({ id: i+1, label: labels[i], text: optText.trim(), isCorrect: false });
-      }
-
-      let correctRaw = prompt(`Correct option number (1-${optionsCount}):`, '1');
-      let correctIndex = correctRaw ? Number(correctRaw) : 1;
-      if (isNaN(correctIndex) || correctIndex < 1 || correctIndex > optionsCount) correctIndex = 1;
-      options.forEach((opt, idx) => opt.isCorrect = idx === (correctIndex - 1));
-
-      if (existingQuestion) {
-        existingQuestion.text = text.trim();
-        existingQuestion.marks = marks;
-        existingQuestion.negativeMarks = negativeMarks;
-        existingQuestion.explanation = explanation.trim();
-        existingQuestion.options = options;
-      } else {
-        const newId = (questionsArr[questionsArr.length - 1]?.id || 0) + 1;
-        questionsArr.push({ id: newId, text: text.trim(), marks, negativeMarks, explanation: explanation.trim(), options });
-        testsContents[currentContentTestId] = questionsArr;
-      }
-
-      renderTestContent();
-    }
-
-    tcAddQuestionBtn.addEventListener('click', () => addOrEditQuestion(null));
-
-    tcQuestionsContainer.addEventListener('click', (e) => {
-      const btn = e.target;
-      if (!(btn instanceof HTMLElement)) return;
-      const action = btn.getAttribute('data-tc-action');
-      if (!action) return;
-
-      const qidAttr = btn.getAttribute('data-qid');
-      const qid = qidAttr ? parseInt(qidAttr, 10) : null;
-      const questionsArr = testsContents[currentContentTestId] || [];
-      const qIndex = questionsArr.findIndex((q) => q.id === qid);
-      if (qIndex === -1) return;
-      const question = questionsArr[qIndex];
-
-      if (action === 'edit-question') addOrEditQuestion(question);
-      else if (action === 'delete-question') {
-        if (confirm('Delete this question?')) {
-          questionsArr.splice(qIndex, 1);
-          testsContents[currentContentTestId] = questionsArr;
-          renderTestContent();
-        }
-      }
-    });
-
-    function renderTests() {
-      testsTableBody.innerHTML = '';
-
-      const filtered = tests.filter((t) => {
-        const term = testSearchTerm;
-        const matchesSearch =
-          !term ||
-          (t.name && t.name.toLowerCase().includes(term)) ||
-          (t.course && t.course.toLowerCase().includes(term));
-
-        const matchesStatus = testFilterStatus === 'all' || t.status === testFilterStatus;
-        return matchesSearch && matchesStatus;
-      });
-
-      if (filtered.length === 0) {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td colspan="7" style="text-align:center;color:#9ca3af;font-size:12px;padding:16px;">
-            No tests found. Try changing search/filter.
-          </td>`;
-        testsTableBody.appendChild(tr);
-      } else {
-        filtered.forEach((t, index) => {
-          const tr = document.createElement('tr');
-          const badgeClass = t.status === 'free' ? 'badge-free' : 'badge-paid';
-          const badgeText = t.status === 'free' ? 'Free' : 'Premium';
-
-          tr.innerHTML = `
-            <td>${index + 1}</td>
-            <td>${escapeHtml(t.name)}</td>
-            <td>${escapeHtml(t.course || '-')}</td>
-            <td>${t.questions || '-'}</td>
-            <td>${escapeHtml(t.duration || '-')}</td>
-            <td><span class="badge ${badgeClass}">${badgeText}</span></td>
-            <td>
-              <button class="btn-secondary" data-action="content-test" data-id="${t.id}">Content</button>
-              <button class="btn-secondary" data-action="edit-test" data-id="${t.id}">Edit</button>
-              <button class="btn-secondary" data-action="delete-test" data-id="${t.id}">Delete</button>
-            </td>
-          `;
-          testsTableBody.appendChild(tr);
-        });
-      }
-
-      statTests.textContent = tests.length.toString();
-    }
-
-    testsTableBody.addEventListener('click', async (e) => {
-      const btn = e.target;
-      if (!(btn instanceof HTMLElement)) return;
-      const action = btn.getAttribute('data-action');
-      const id = btn.getAttribute('data-id');
-      if (!action || !id) return;
-      const testId = parseInt(id, 10);
-
-      if (action === 'delete-test') {
-        if (confirm('Delete this test?')) {
-          await fetch(`${API_BASE}/tests/${testId}`, { method: "DELETE" });
-          if (editingTestId === testId) resetTestForm();
-          if (currentContentTestId === testId) hideTestContentEditor();
-          await fetchTests();
-          renderTests();
-        }
-      } else if (action === 'edit-test') {
-        const t = tests.find((x) => x.id === testId);
-        if (!t) return;
-        editingTestId = t.id;
-        testNameInput.value = t.name || '';
-        testCourseInput.value = t.course || '';
-        testQuestionsInput.value = t.questions || '';
-        testDurationInput.value = t.duration || '';
-        testStatusInput.value = t.status || 'free';
-        testSubmitBtn.textContent = 'Update test';
-        testCancelEditBtn.style.display = 'inline-flex';
-        testForm.scrollIntoView({ behavior: 'smooth' });
-        testNameInput.focus();
-      } else if (action === 'content-test') {
-        openTestContentEditor(testId);
-      }
-    });
-
-    function resetTestForm() {
-      editingTestId = null;
-      testForm.reset();
-      testSubmitBtn.textContent = 'Save test';
-      testCancelEditBtn.style.display = 'none';
-    }
-
-    testCancelEditBtn.addEventListener('click', resetTestForm);
-
-    testForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-
-      const name = testNameInput.value.trim();
-      if (!name) return;
-
-      const payload = {
-        name,
-        course: testCourseInput.value.trim(),
-        questions: testQuestionsInput.value ? Number(testQuestionsInput.value) : 0,
-        duration: testDurationInput.value.trim(),
-        status: testStatusInput.value
-      };
-
-      if (editingTestId) {
-        await fetch(`${API_BASE}/tests/${editingTestId}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-      } else {
-        await fetch(`${API_BASE}/tests`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-      }
-
-      resetTestForm();
-      await fetchTests();
-      renderTests();
-    });
-
-    addTestScrollBtn.addEventListener('click', () => {
-      testForm.scrollIntoView({ behavior: 'smooth' });
-      testNameInput.focus();
-    });
-
-    testSearchInput.addEventListener('input', (e) => {
-      testSearchTerm = e.target.value.toLowerCase();
-      renderTests();
-    });
-
-    testFilterStatusSelect.addEventListener('change', (e) => {
-      testFilterStatus = e.target.value;
-      renderTests();
-    });
-
-    // ===== UPDATES =====
-    const updatesTableBody = document.querySelector('#updatesTable tbody');
-    const updateForm = document.getElementById('updateForm');
-    const statUpdates = document.getElementById('stat-updates');
-    const updateTitleInput = document.getElementById('updateTitle');
-    const updateAudienceInput = document.getElementById('updateAudience');
-    const updateBodyInput = document.getElementById('updateBody');
-    const updateSubmitBtn = document.getElementById('updateSubmitBtn');
-    const updateCancelEditBtn = document.getElementById('updateCancelEditBtn');
-    const addUpdateScrollBtn = document.getElementById('addUpdateScrollBtn');
-    const updateSearchInput = document.getElementById('updateSearch');
-
-    let editingUpdateId = null;
-    let updateSearchTerm = '';
-
-    async function fetchUpdates() {
-      const res = await fetch(`${API_BASE}/updates`);
-      if (!res.ok) throw new Error("Failed to load updates");
-      updates = await res.json();
-    }
-
-    function renderUpdates() {
-      updatesTableBody.innerHTML = '';
-
-      const filtered = updates.filter((u) => {
-        const term = updateSearchTerm;
-        return (
-          !term ||
-          (u.title && u.title.toLowerCase().includes(term)) ||
-          (u.body && u.body.toLowerCase().includes(term))
-        );
-      });
-
-      if (filtered.length === 0) {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td colspan="5" style="text-align:center;color:#9ca3af;font-size:12px;padding:16px;">
-            No updates found. Try changing search.
-          </td>`;
-        updatesTableBody.appendChild(tr);
-      } else {
-        filtered.forEach((u, index) => {
-          const tr = document.createElement('tr');
-          tr.innerHTML = `
-            <td>${index + 1}</td>
-            <td>
-              <strong>${escapeHtml(u.title)}</strong><br/>
-              <span style="font-size:11px;color:#6b7280;">${escapeHtml(u.body || '')}</span>
-            </td>
-            <td>${escapeHtml(u.audience || 'All')}</td>
-            <td>${escapeHtml(u.created_at || '-')}</td>
-            <td>
-              <button class="btn-secondary" data-action="edit-update" data-id="${u.id}">Edit</button>
-              <button class="btn-secondary" data-action="delete-update" data-id="${u.id}">Delete</button>
-            </td>
-          `;
-          updatesTableBody.appendChild(tr);
-        });
-      }
-
-      statUpdates.textContent = updates.length.toString();
-    }
-
-    updatesTableBody.addEventListener('click', async (e) => {
-      const btn = e.target;
-      if (!(btn instanceof HTMLElement)) return;
-      const action = btn.getAttribute('data-action');
-      const id = btn.getAttribute('data-id');
-      if (!action || !id) return;
-      const updateId = parseInt(id, 10);
-
-      if (action === 'delete-update') {
-        if (confirm('Delete this update?')) {
-          await fetch(`${API_BASE}/updates/${updateId}`, { method: "DELETE" });
-          if (editingUpdateId === updateId) resetUpdateForm();
-          await fetchUpdates();
-          renderUpdates();
-        }
-      } else if (action === 'edit-update') {
-        const u = updates.find((x) => x.id === updateId);
-        if (!u) return;
-        editingUpdateId = u.id;
-        updateTitleInput.value = u.title || '';
-        updateAudienceInput.value = u.audience || '';
-        updateBodyInput.value = u.body || '';
-        updateSubmitBtn.textContent = 'Update update';
-        updateCancelEditBtn.style.display = 'inline-flex';
-        updateForm.scrollIntoView({ behavior: 'smooth' });
-        updateTitleInput.focus();
-      }
-    });
-
-    function resetUpdateForm() {
-      editingUpdateId = null;
-      updateForm.reset();
-      updateSubmitBtn.textContent = 'Save update';
-      updateCancelEditBtn.style.display = 'none';
-    }
-
-    updateCancelEditBtn.addEventListener('click', resetUpdateForm);
-
-    updateForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const title = updateTitleInput.value.trim();
-      if (!title) return;
-
-      const payload = {
-        title,
-        audience: updateAudienceInput.value.trim(),
-        body: updateBodyInput.value.trim(),
-      };
-
-      if (editingUpdateId) {
-        await fetch(`${API_BASE}/updates/${editingUpdateId}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-      } else {
-        await fetch(`${API_BASE}/updates`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-      }
-
-      resetUpdateForm();
-      await fetchUpdates();
-      renderUpdates();
-    });
-
-    addUpdateScrollBtn.addEventListener('click', () => {
-      updateForm.scrollIntoView({ behavior: 'smooth' });
-      updateTitleInput.focus();
-    });
-
-    updateSearchInput.addEventListener('input', (e) => {
-      updateSearchTerm = e.target.value.toLowerCase();
-      renderUpdates();
-    });
-
-    // ===== UTIL =====
-    function escapeHtml(str) {
-      if (!str) return '';
-      return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-    }
-
-    async function bootstrapLoad() {
-      try {
-        await fetchCourses();
-        await fetchTests();
-        await fetchUpdates();
-        renderCourses();
-        renderTests();
-        renderUpdates();
-      } catch (err) {
-        console.error(err);
-        alert("Backend not reachable. Make sure backend is running on http://localhost:8080");
-      }
-    }
-  </script>
 </body>
 </html>
