@@ -433,14 +433,33 @@ const logoutBtn = document.getElementById("logoutBtn");
 const adminEmailEl = document.getElementById("adminEmail");
 const avatarInitialEl = document.getElementById("avatarInitial");
 
-/* ========= NAV SWITCH FIX ========= */
+/* ========= HELPERS ========= */
+function uid(prefix="id") {
+  return `${prefix}_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+}
+
+async function api(path, options = {}) {
+  const res = await fetch(`${API_BASE}${path}`, {
+    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+    ...options,
+  });
+
+  const text = await res.text();
+  let data = null;
+  try { data = text ? JSON.parse(text) : null; } catch (_) {}
+
+  if (!res.ok) {
+    const msg = (data && data.error) ? data.error : `HTTP ${res.status}`;
+    throw new Error(msg);
+  }
+  return data;
+}
+
+/* ========= NAV ========= */
 function setActiveSection(key) {
-  // left menu active
   document.querySelectorAll(".nav-link").forEach(btn => {
     btn.classList.toggle("active", btn.dataset.section === key);
   });
-
-  // sections active
   document.querySelectorAll(".section").forEach(sec => sec.classList.remove("active"));
   const target = document.getElementById(`section-${key}`);
   if (target) target.classList.add("active");
@@ -452,38 +471,27 @@ function initNav() {
   });
 }
 
-/* ========= SAFE FETCH ========= */
-async function api(path, options = {}) {
-  const res = await fetch(`${API_BASE}${path}`, {
-    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
-    ...options,
-  });
-
-  // try parse json
-  let data = null;
-  const text = await res.text();
-  try { data = text ? JSON.parse(text) : null; } catch (_) {}
-
-  if (!res.ok) {
-    const msg = (data && data.error) ? data.error : `HTTP ${res.status}`;
-    throw new Error(msg);
-  }
-  return data;
-}
-
 /* ========= GLOBAL STATE ========= */
 let courses = [];
 let tests = [];
 let updates = [];
+
 let currentContentCourseId = null;
 let currentContentTestId = null;
+
+let editingCourseId = null;
+let editingTestId = null;
+let editingUpdateId = null;
+
+/* ====== CONTENT STATE (UI Editors) ====== */
+const ccState = { modules: [] }; // Course content: modules -> items
+const tcState = { questions: [] }; // Test content: questions array
 
 /* ========= LOAD DATA ========= */
 async function fetchCourses() { courses = await api("/courses"); }
 async function fetchTests() { tests = await api("/tests"); }
 async function fetchUpdates() { updates = await api("/updates"); }
 
-/* ========= STATS ========= */
 function renderStats() {
   document.getElementById("stat-courses").textContent = courses.length;
   document.getElementById("stat-tests").textContent = tests.length;
@@ -561,9 +569,11 @@ async function renderUpdates() {
   });
 }
 
-/* ========= CRUD - COURSES ========= */
-let editingCourseId = null;
+/* =========================
+   CRUD FORMS
+========================= */
 
+/* --- Courses form --- */
 document.getElementById("courseForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   const payload = {
@@ -626,9 +636,7 @@ async function deleteCourse(id) {
   }
 }
 
-/* ========= CRUD - TESTS ========= */
-let editingTestId = null;
-
+/* --- Tests form --- */
 document.getElementById("testForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   const payload = {
@@ -691,9 +699,7 @@ async function deleteTest(id) {
   }
 }
 
-/* ========= CRUD - UPDATES ========= */
-let editingUpdateId = null;
-
+/* --- Updates form --- */
 document.getElementById("updateForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   const payload = {
@@ -752,24 +758,643 @@ async function deleteUpdate(id) {
   }
 }
 
-/* ========= CONTENT (Course/Test) ========= */
+/* =========================
+   COURSE CONTENT EDITOR (UI)
+========================= */
+
+const courseContentEditorEl = document.getElementById("courseContentEditor");
+const ccCourseTitleEl = document.getElementById("ccCourseTitle");
+const ccSectionsContainer = document.getElementById("ccSectionsContainer");
+const ccJsonOutput = document.getElementById("ccJsonOutput");
+
+const ccAddSectionBtn = document.getElementById("ccAddSectionBtn");
+const ccShowJsonBtn = document.getElementById("ccShowJsonBtn");
+const ccCopyJsonBtn = document.getElementById("ccCopyJsonBtn");
+const ccSaveBtn = document.getElementById("ccSaveBtn");
+
+function normalizeCourseContent(data) {
+  // Accept {modules:[]}, {sections:[]}, or [] directly
+  if (Array.isArray(data)) return { modules: data };
+  if (data && Array.isArray(data.modules)) return { modules: data.modules };
+  if (data && Array.isArray(data.sections)) {
+    // legacy sections -> modules mapping (best-effort)
+    const modules = data.sections.map((s, idx) => ({
+      id: s.id || uid("mod"),
+      title: s.title || `Section ${idx+1}`,
+      description: s.description || "",
+      order: Number(s.order ?? idx),
+      items: Array.isArray(s.items) ? s.items : (Array.isArray(s.lessons) ? s.lessons : []),
+    }));
+    return { modules };
+  }
+  return { modules: [] };
+}
+
+function renderCourseContentEditor() {
+  ccSectionsContainer.innerHTML = "";
+
+  ccState.modules
+    .sort((a,b) => (a.order ?? 0) - (b.order ?? 0))
+    .forEach((mod, modIndex) => {
+      if (!mod.id) mod.id = uid("mod");
+      if (!Array.isArray(mod.items)) mod.items = [];
+
+      const card = document.createElement("div");
+      card.className = "cc-section-card";
+
+      card.innerHTML = `
+        <div class="cc-section-header">
+          <div style="flex:1; min-width:260px;">
+            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+              <input
+                style="flex:1; min-width:200px; border-radius:8px; border:1px solid #e5e7eb; padding:7px 9px; font-size:13px;"
+                placeholder="Section title"
+                value="${(mod.title || "").replaceAll('"','&quot;')}"
+                data-cc="mod-title"
+                data-mod="${modIndex}"
+              />
+              <input
+                style="width:90px; border-radius:8px; border:1px solid #e5e7eb; padding:7px 9px; font-size:13px;"
+                type="number"
+                placeholder="Order"
+                value="${mod.order ?? modIndex}"
+                data-cc="mod-order"
+                data-mod="${modIndex}"
+              />
+            </div>
+            <div style="margin-top:8px;">
+              <textarea
+                style="width:100%; border-radius:8px; border:1px solid #e5e7eb; padding:7px 9px; font-size:13px;"
+                rows="2"
+                placeholder="Section description (optional)"
+                data-cc="mod-desc"
+                data-mod="${modIndex}"
+              >${mod.description || ""}</textarea>
+            </div>
+          </div>
+
+          <div class="cc-section-actions">
+            <button class="btn-secondary" data-cc="mod-up" data-mod="${modIndex}">↑</button>
+            <button class="btn-secondary" data-cc="mod-down" data-mod="${modIndex}">↓</button>
+            <button class="btn-secondary" data-cc="add-item" data-mod="${modIndex}">+ Lesson</button>
+            <button class="btn-secondary" data-cc="delete-mod" data-mod="${modIndex}">Delete</button>
+          </div>
+        </div>
+
+        <div class="cc-lessons-wrapper">
+          <table class="cc-lessons-table">
+            <thead>
+              <tr>
+                <th style="width:30px;">#</th>
+                <th>Title</th>
+                <th style="width:90px;">Type</th>
+                <th style="width:90px;">Duration</th>
+                <th style="width:90px;">Lock</th>
+                <th style="width:90px;">Preview</th>
+                <th style="width:260px;">Link / URL</th>
+                <th style="width:140px;">Actions</th>
+              </tr>
+            </thead>
+            <tbody data-cc="items-body" data-mod="${modIndex}"></tbody>
+          </table>
+        </div>
+      `;
+
+      ccSectionsContainer.appendChild(card);
+
+      const tbody = card.querySelector('tbody[data-cc="items-body"]');
+
+      mod.items.forEach((it, itemIndex) => {
+        if (!it.id) it.id = uid("item");
+        if (!it.type) it.type = "video";
+
+        const linkValue = it.video_url || it.pdf_url || it.external_link || it.quiz_id || "";
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${itemIndex + 1}</td>
+          <td>
+            <input
+              style="width:100%; border-radius:8px; border:1px solid #e5e7eb; padding:6px 8px; font-size:12px;"
+              placeholder="Lesson title"
+              value="${(it.title || "").replaceAll('"','&quot;')}"
+              data-cc="item-title"
+              data-mod="${modIndex}"
+              data-item="${itemIndex}"
+            />
+            <textarea
+              style="width:100%; margin-top:6px; border-radius:8px; border:1px solid #e5e7eb; padding:6px 8px; font-size:12px;"
+              rows="2"
+              placeholder="Description (optional)"
+              data-cc="item-desc"
+              data-mod="${modIndex}"
+              data-item="${itemIndex}"
+            >${it.description || ""}</textarea>
+          </td>
+          <td>
+            <select
+              style="width:100%; border-radius:8px; border:1px solid #e5e7eb; padding:6px 8px; font-size:12px;"
+              data-cc="item-type"
+              data-mod="${modIndex}"
+              data-item="${itemIndex}"
+            >
+              <option value="video" ${it.type==="video" ? "selected" : ""}>video</option>
+              <option value="pdf" ${it.type==="pdf" ? "selected" : ""}>pdf</option>
+              <option value="note" ${it.type==="note" ? "selected" : ""}>note</option>
+              <option value="quiz" ${it.type==="quiz" ? "selected" : ""}>quiz</option>
+              <option value="link" ${it.type==="link" ? "selected" : ""}>link</option>
+            </select>
+          </td>
+          <td>
+            <input
+              type="number"
+              style="width:100%; border-radius:8px; border:1px solid #e5e7eb; padding:6px 8px; font-size:12px;"
+              placeholder="min"
+              value="${it.duration_minutes ?? ""}"
+              data-cc="item-duration"
+              data-mod="${modIndex}"
+              data-item="${itemIndex}"
+            />
+          </td>
+          <td>
+            <label style="display:flex; gap:6px; align-items:center; font-size:12px;">
+              <input type="checkbox" ${it.is_locked ? "checked":""}
+                data-cc="item-locked" data-mod="${modIndex}" data-item="${itemIndex}" />
+              ${it.is_locked ? `<span class="cc-tag-lock">Locked</span>` : `<span class="cc-tag-unlock">Open</span>`}
+            </label>
+          </td>
+          <td>
+            <label style="display:flex; gap:6px; align-items:center; font-size:12px;">
+              <input type="checkbox" ${it.is_preview ? "checked":""}
+                data-cc="item-preview" data-mod="${modIndex}" data-item="${itemIndex}" />
+              Preview
+            </label>
+          </td>
+          <td>
+            <input
+              style="width:100%; border-radius:8px; border:1px solid #e5e7eb; padding:6px 8px; font-size:12px;"
+              placeholder="video/pdf/link/quiz id"
+              value="${(linkValue || "").replaceAll('"','&quot;')}"
+              data-cc="item-link"
+              data-mod="${modIndex}"
+              data-item="${itemIndex}"
+            />
+            <div style="margin-top:4px; font-size:11px; color:#6b7280;">
+              video_url / pdf_url / external_link / quiz_id (type ke hisaab se)
+            </div>
+          </td>
+          <td>
+            <button class="btn-secondary" data-cc="item-up" data-mod="${modIndex}" data-item="${itemIndex}">↑</button>
+            <button class="btn-secondary" data-cc="item-down" data-mod="${modIndex}" data-item="${itemIndex}">↓</button>
+            <button class="btn-secondary" data-cc="delete-item" data-mod="${modIndex}" data-item="${itemIndex}">Delete</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+  });
+
+  // update JSON box if visible
+  if (ccJsonOutput.style.display !== "none") {
+    ccJsonOutput.value = JSON.stringify({ modules: ccState.modules }, null, 2);
+  }
+}
+
+function wireCourseContentEvents() {
+  // input updates (delegation)
+  courseContentEditorEl.addEventListener("input", (e) => {
+    const t = e.target;
+    if (!t.dataset || !t.dataset.cc) return;
+
+    const cc = t.dataset.cc;
+    const modIndex = Number(t.dataset.mod);
+    const itemIndex = t.dataset.item !== undefined ? Number(t.dataset.item) : null;
+
+    if (Number.isNaN(modIndex)) return;
+
+    const mod = ccState.modules[modIndex];
+    if (!mod) return;
+
+    if (cc === "mod-title") mod.title = t.value;
+    if (cc === "mod-desc") mod.description = t.value;
+    if (cc === "mod-order") mod.order = Number(t.value || 0);
+
+    if (itemIndex !== null) {
+      const it = mod.items[itemIndex];
+      if (!it) return;
+
+      if (cc === "item-title") it.title = t.value;
+      if (cc === "item-desc") it.description = t.value;
+      if (cc === "item-type") {
+        it.type = t.value;
+
+        // clear link fields so mapping is clean
+        it.video_url = null; it.pdf_url = null; it.external_link = null; it.quiz_id = null;
+      }
+      if (cc === "item-duration") it.duration_minutes = t.value ? Number(t.value) : null;
+      if (cc === "item-link") {
+        const val = t.value.trim();
+        // map based on type
+        it.video_url = null; it.pdf_url = null; it.external_link = null; it.quiz_id = null;
+        if (!val) return;
+
+        if (it.type === "video") it.video_url = val;
+        else if (it.type === "pdf") it.pdf_url = val;
+        else if (it.type === "link") it.external_link = val;
+        else if (it.type === "quiz") it.quiz_id = val;
+        else it.external_link = val;
+      }
+    }
+  });
+
+  courseContentEditorEl.addEventListener("change", (e) => {
+    const t = e.target;
+    if (!t.dataset || !t.dataset.cc) return;
+
+    const cc = t.dataset.cc;
+    const modIndex = Number(t.dataset.mod);
+    const itemIndex = t.dataset.item !== undefined ? Number(t.dataset.item) : null;
+    const mod = ccState.modules[modIndex];
+    if (!mod) return;
+
+    if (itemIndex !== null) {
+      const it = mod.items[itemIndex];
+      if (!it) return;
+
+      if (cc === "item-locked") it.is_locked = !!t.checked;
+      if (cc === "item-preview") it.is_preview = !!t.checked;
+
+      // refresh to update lock badges
+      renderCourseContentEditor();
+    }
+  });
+
+  courseContentEditorEl.addEventListener("click", (e) => {
+    const btn = e.target.closest("button");
+    if (!btn || !btn.dataset || !btn.dataset.cc) return;
+
+    const cc = btn.dataset.cc;
+    const modIndex = Number(btn.dataset.mod);
+    const itemIndex = btn.dataset.item !== undefined ? Number(btn.dataset.item) : null;
+
+    if (cc === "delete-mod") {
+      if (!confirm("Delete this section?")) return;
+      ccState.modules.splice(modIndex, 1);
+      renderCourseContentEditor();
+      return;
+    }
+
+    if (cc === "mod-up" && modIndex > 0) {
+      const tmp = ccState.modules[modIndex - 1];
+      ccState.modules[modIndex - 1] = ccState.modules[modIndex];
+      ccState.modules[modIndex] = tmp;
+      renderCourseContentEditor();
+      return;
+    }
+
+    if (cc === "mod-down" && modIndex < ccState.modules.length - 1) {
+      const tmp = ccState.modules[modIndex + 1];
+      ccState.modules[modIndex + 1] = ccState.modules[modIndex];
+      ccState.modules[modIndex] = tmp;
+      renderCourseContentEditor();
+      return;
+    }
+
+    if (cc === "add-item") {
+      const mod = ccState.modules[modIndex];
+      if (!mod.items) mod.items = [];
+      mod.items.push({
+        id: uid("item"),
+        type: "video",
+        title: "New lesson",
+        description: "",
+        duration_minutes: null,
+        is_locked: false,
+        is_preview: false,
+        video_url: "",
+        pdf_url: null,
+        external_link: null,
+        quiz_id: null,
+      });
+      renderCourseContentEditor();
+      return;
+    }
+
+    if (cc === "delete-item" && itemIndex !== null) {
+      if (!confirm("Delete this lesson?")) return;
+      ccState.modules[modIndex].items.splice(itemIndex, 1);
+      renderCourseContentEditor();
+      return;
+    }
+
+    if (cc === "item-up" && itemIndex !== null && itemIndex > 0) {
+      const items = ccState.modules[modIndex].items;
+      [items[itemIndex - 1], items[itemIndex]] = [items[itemIndex], items[itemIndex - 1]];
+      renderCourseContentEditor();
+      return;
+    }
+
+    if (cc === "item-down" && itemIndex !== null) {
+      const items = ccState.modules[modIndex].items;
+      if (itemIndex < items.length - 1) {
+        [items[itemIndex + 1], items[itemIndex]] = [items[itemIndex], items[itemIndex + 1]];
+        renderCourseContentEditor();
+      }
+      return;
+    }
+  });
+
+  ccAddSectionBtn.addEventListener("click", () => {
+    ccState.modules.push({
+      id: uid("mod"),
+      title: `New section`,
+      description: "",
+      order: ccState.modules.length,
+      items: [],
+    });
+    renderCourseContentEditor();
+  });
+
+  ccShowJsonBtn.addEventListener("click", () => {
+    const show = ccJsonOutput.style.display === "none";
+    ccJsonOutput.style.display = show ? "block" : "none";
+    if (show) ccJsonOutput.value = JSON.stringify({ modules: ccState.modules }, null, 2);
+  });
+
+  ccCopyJsonBtn.addEventListener("click", async () => {
+    const txt = JSON.stringify({ modules: ccState.modules }, null, 2);
+    await navigator.clipboard.writeText(txt);
+    alert("Copied JSON ✅");
+  });
+
+  ccSaveBtn.addEventListener("click", async () => {
+    if (!currentContentCourseId) return alert("Open a course first.");
+    try {
+      await api(`/courses/${currentContentCourseId}/content`, {
+        method: "PUT",
+        body: JSON.stringify({ modules: ccState.modules }),
+      });
+      alert("Course content saved ✅");
+    } catch (err) {
+      alert("Save failed: " + err.message);
+    }
+  });
+}
+
 async function openCourseContentEditor(courseId) {
   try {
-    const data = await api(`/courses/${courseId}/content`);
+    const c = courses.find(x => x.id === courseId);
     currentContentCourseId = courseId;
-    alert("Loaded course content ✅ (check console)");
-    console.log("Course content:", data);
+
+    const raw = await api(`/courses/${courseId}/content`);
+    const norm = normalizeCourseContent(raw);
+
+    ccState.modules = norm.modules;
+    ccCourseTitleEl.textContent = c ? c.title : `Course #${courseId}`;
+
+    courseContentEditorEl.style.display = "block";
+    setActiveSection("courses");
+    renderCourseContentEditor();
+    alert("Course content loaded ✅");
   } catch (err) {
     alert("Content load failed: " + err.message);
   }
 }
 
+/* =========================
+   TEST QUESTIONS EDITOR (UI)
+========================= */
+
+const testContentEditorEl = document.getElementById("testContentEditor");
+const tcTestTitleEl = document.getElementById("tcTestTitle");
+const tcQuestionsContainer = document.getElementById("tcQuestionsContainer");
+const tcAddQuestionBtn = document.getElementById("tcAddQuestionBtn");
+const tcSaveBtn = document.getElementById("tcSaveBtn");
+
+function normalizeTestQuestions(data) {
+  // Accept [] or {questions:[]}
+  if (Array.isArray(data)) return data;
+  if (data && Array.isArray(data.questions)) return data.questions;
+  return [];
+}
+
+function newQuestion() {
+  return {
+    id: uid("q"),
+    question: "",
+    options: ["", "", "", ""],
+    correctIndex: 0,
+    explanation: "",
+    marks: 1,
+    negative: 0,
+  };
+}
+
+function renderTestQuestionsEditor() {
+  tcQuestionsContainer.innerHTML = "";
+
+  tcState.questions.forEach((q, qi) => {
+    if (!q.id) q.id = uid("q");
+    if (!Array.isArray(q.options)) q.options = ["", "", "", ""];
+
+    const card = document.createElement("div");
+    card.className = "cc-section-card";
+    card.innerHTML = `
+      <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+        <div style="font-weight:700;">Q${qi + 1}</div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="btn-secondary" data-tc="q-up" data-qi="${qi}">↑</button>
+          <button class="btn-secondary" data-tc="q-down" data-qi="${qi}">↓</button>
+          <button class="btn-secondary" data-tc="q-delete" data-qi="${qi}">Delete</button>
+        </div>
+      </div>
+
+      <div style="margin-top:10px;">
+        <textarea
+          rows="2"
+          style="width:100%; border-radius:8px; border:1px solid #e5e7eb; padding:7px 9px; font-size:13px;"
+          placeholder="Question text"
+          data-tc="q-text"
+          data-qi="${qi}"
+        >${q.question || ""}</textarea>
+      </div>
+
+      <div style="margin-top:10px; display:grid; grid-template-columns: 1fr; gap:8px;">
+        ${q.options.map((op, oi) => `
+          <div style="display:flex; gap:8px; align-items:center;">
+            <div style="width:22px; font-weight:700;">${String.fromCharCode(65+oi)}.</div>
+            <input
+              style="flex:1; border-radius:8px; border:1px solid #e5e7eb; padding:7px 9px; font-size:13px;"
+              placeholder="Option ${oi+1}"
+              value="${(op || "").replaceAll('"','&quot;')}"
+              data-tc="opt"
+              data-qi="${qi}"
+              data-oi="${oi}"
+            />
+            <button class="btn-secondary" data-tc="opt-del" data-qi="${qi}" data-oi="${oi}">X</button>
+          </div>
+        `).join("")}
+
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="btn-secondary" data-tc="opt-add" data-qi="${qi}">+ Add option</button>
+        </div>
+      </div>
+
+      <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
+        <div style="min-width:220px;">
+          <div style="font-size:12px; color:#6b7280; margin-bottom:4px;">Correct option</div>
+          <select
+            style="width:220px; border-radius:8px; border:1px solid #e5e7eb; padding:7px 9px; font-size:13px;"
+            data-tc="correct"
+            data-qi="${qi}"
+          >
+            ${q.options.map((_, oi) => `<option value="${oi}" ${q.correctIndex==oi ? "selected":""}>${String.fromCharCode(65+oi)}</option>`).join("")}
+          </select>
+        </div>
+
+        <div>
+          <div style="font-size:12px; color:#6b7280; margin-bottom:4px;">Marks</div>
+          <input type="number" step="0.5"
+            style="width:120px; border-radius:8px; border:1px solid #e5e7eb; padding:7px 9px; font-size:13px;"
+            value="${q.marks ?? 1}"
+            data-tc="marks"
+            data-qi="${qi}"
+          />
+        </div>
+
+        <div>
+          <div style="font-size:12px; color:#6b7280; margin-bottom:4px;">Negative</div>
+          <input type="number" step="0.5"
+            style="width:120px; border-radius:8px; border:1px solid #e5e7eb; padding:7px 9px; font-size:13px;"
+            value="${q.negative ?? 0}"
+            data-tc="neg"
+            data-qi="${qi}"
+          />
+        </div>
+      </div>
+
+      <div style="margin-top:10px;">
+        <textarea
+          rows="2"
+          style="width:100%; border-radius:8px; border:1px solid #e5e7eb; padding:7px 9px; font-size:13px;"
+          placeholder="Explanation (optional)"
+          data-tc="exp"
+          data-qi="${qi}"
+        >${q.explanation || ""}</textarea>
+      </div>
+    `;
+    tcQuestionsContainer.appendChild(card);
+  });
+}
+
+function wireTestContentEvents() {
+  testContentEditorEl.addEventListener("input", (e) => {
+    const t = e.target;
+    if (!t.dataset || !t.dataset.tc) return;
+
+    const key = t.dataset.tc;
+    const qi = Number(t.dataset.qi);
+    const oi = t.dataset.oi !== undefined ? Number(t.dataset.oi) : null;
+
+    const q = tcState.questions[qi];
+    if (!q) return;
+
+    if (key === "q-text") q.question = t.value;
+    if (key === "opt" && oi !== null) q.options[oi] = t.value;
+    if (key === "exp") q.explanation = t.value;
+    if (key === "marks") q.marks = Number(t.value || 0);
+    if (key === "neg") q.negative = Number(t.value || 0);
+  });
+
+  testContentEditorEl.addEventListener("change", (e) => {
+    const t = e.target;
+    if (!t.dataset || !t.dataset.tc) return;
+
+    const key = t.dataset.tc;
+    const qi = Number(t.dataset.qi);
+
+    const q = tcState.questions[qi];
+    if (!q) return;
+
+    if (key === "correct") q.correctIndex = Number(t.value || 0);
+  });
+
+  testContentEditorEl.addEventListener("click", (e) => {
+    const btn = e.target.closest("button");
+    if (!btn || !btn.dataset || !btn.dataset.tc) return;
+
+    const key = btn.dataset.tc;
+    const qi = Number(btn.dataset.qi);
+    const oi = btn.dataset.oi !== undefined ? Number(btn.dataset.oi) : null;
+
+    if (key === "q-delete") {
+      if (!confirm("Delete this question?")) return;
+      tcState.questions.splice(qi, 1);
+      renderTestQuestionsEditor();
+      return;
+    }
+
+    if (key === "q-up" && qi > 0) {
+      [tcState.questions[qi-1], tcState.questions[qi]] = [tcState.questions[qi], tcState.questions[qi-1]];
+      renderTestQuestionsEditor();
+      return;
+    }
+
+    if (key === "q-down" && qi < tcState.questions.length - 1) {
+      [tcState.questions[qi+1], tcState.questions[qi]] = [tcState.questions[qi], tcState.questions[qi+1]];
+      renderTestQuestionsEditor();
+      return;
+    }
+
+    if (key === "opt-add") {
+      const q = tcState.questions[qi];
+      q.options.push("");
+      renderTestQuestionsEditor();
+      return;
+    }
+
+    if (key === "opt-del" && oi !== null) {
+      const q = tcState.questions[qi];
+      if (q.options.length <= 2) return alert("Minimum 2 options required.");
+      q.options.splice(oi, 1);
+      if (q.correctIndex >= q.options.length) q.correctIndex = 0;
+      renderTestQuestionsEditor();
+      return;
+    }
+  });
+
+  tcAddQuestionBtn.addEventListener("click", () => {
+    tcState.questions.push(newQuestion());
+    renderTestQuestionsEditor();
+  });
+
+  tcSaveBtn.addEventListener("click", async () => {
+    if (!currentContentTestId) return alert("Open a test first.");
+    try {
+      await api(`/tests/${currentContentTestId}/questions`, {
+        method: "PUT",
+        body: JSON.stringify(tcState.questions),
+      });
+      alert("Test questions saved ✅");
+    } catch (err) {
+      alert("Save failed: " + err.message);
+    }
+  });
+}
+
 async function openTestContentEditor(testId) {
   try {
-    const data = await api(`/tests/${testId}/questions`);
+    const t = tests.find(x => x.id === testId);
     currentContentTestId = testId;
-    alert("Loaded test questions ✅ (check console)");
-    console.log("Test questions:", data);
+
+    const raw = await api(`/tests/${testId}/questions`);
+    tcState.questions = normalizeTestQuestions(raw);
+
+    tcTestTitleEl.textContent = t ? t.name : `Test #${testId}`;
+    testContentEditorEl.style.display = "block";
+
+    setActiveSection("tests");
+    renderTestQuestionsEditor();
+    alert("Test questions loaded ✅");
   } catch (err) {
     alert("Questions load failed: " + err.message);
   }
@@ -779,6 +1404,9 @@ async function openTestContentEditor(testId) {
 async function bootstrapLoad() {
   try {
     initNav();
+    wireCourseContentEvents();
+    wireTestContentEvents();
+
     await renderCourses();
     await renderTests();
     await renderUpdates();
