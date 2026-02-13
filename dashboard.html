@@ -282,7 +282,11 @@
               <div class="card-title">Course content</div>
               <div class="cc-editor-subtitle">Manage sections & lessons for: <strong id="ccCourseTitle"></strong></div>
             </div>
-            <button class="btn-primary" id="ccAddSectionBtn">+ Add section</button>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+  <button class="btn-secondary" id="ccSaveBtn">Save to DB</button>
+  <button class="btn-primary" id="ccAddSectionBtn">+ Add section</button>
+</div>
+
           </div>
 
           <div class="cc-json-toolbar">
@@ -355,7 +359,11 @@
               <div class="card-title">Test content</div>
               <div class="cc-editor-subtitle">Manage questions for: <strong id="tcTestTitle"></strong></div>
             </div>
-            <button class="btn-primary" id="tcAddQuestionBtn">+ Add question</button>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+  <button class="btn-secondary" id="tcSaveBtn">Save to DB</button>
+  <button class="btn-primary" id="tcAddQuestionBtn">+ Add question</button>
+</div>
+
           </div>
           <div class="cc-sections-container" id="tcQuestionsContainer"></div>
           <p class="muted">Note: questions editor is local for now. Backend endpoints will be added later.</p>
