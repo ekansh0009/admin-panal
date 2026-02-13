@@ -420,7 +420,16 @@
   </div>
 
 <script>
-const API_BASE = "http://localhost:8080/api";
+/* =========================
+   PAPI ADMIN PANEL (FULL JS)
+   - Nav working
+   - Dashboard stats working
+   - Courses/Tests/Updates CRUD
+   - Course Content Editor: dynamic fields + validation + open buttons + save
+   - Test Questions Editor: add/remove + validation + save
+   ========================= */
+
+const API_BASE = "http://localhost:8080/api"; // change if needed
 
 /* ========= FIREBASE ========= */
 const firebaseConfig = {
@@ -436,994 +445,97 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const ALLOWED_ADMINS = ["admin@papi.in"];
 
+/* ========= DOM ========= */
 const overlay = document.getElementById("overlay");
 const logoutBtn = document.getElementById("logoutBtn");
 const adminEmailEl = document.getElementById("adminEmail");
 const avatarInitialEl = document.getElementById("avatarInitial");
 
-/* ========= HELPERS ========= */
-function uid(prefix="id") {
-  return `${prefix}_${Date.now()}_${Math.random().toString(16).slice(2)}`;
-}
+/* Stats */
+const statCoursesEl = document.getElementById("stat-courses");
+const statTestsEl = document.getElementById("stat-tests");
+const statUpdatesEl = document.getElementById("stat-updates");
 
-async function api(path, options = {}) {
-  const res = await fetch(`${API_BASE}${path}`, {
-    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
-    ...options,
-  });
+/* Tables */
+const coursesTbody = document.querySelector("#coursesTable tbody");
+const testsTbody = document.querySelector("#testsTable tbody");
+const updatesTbody = document.querySelector("#updatesTable tbody");
 
-  const text = await res.text();
-  let data = null;
-  try { data = text ? JSON.parse(text) : null; } catch (_) {}
+/* Forms */
+const courseForm = document.getElementById("courseForm");
+const courseTitle = document.getElementById("courseTitle");
+const courseLevel = document.getElementById("courseLevel");
+const courseType = document.getElementById("courseType");
+const coursePrice = document.getElementById("coursePrice");
+const courseSubtitle = document.getElementById("courseSubtitle");
 
-  if (!res.ok) {
-    const msg = (data && data.error) ? data.error : `HTTP ${res.status}`;
-    throw new Error(msg);
-  }
-  return data;
-}
+const testForm = document.getElementById("testForm");
+const testName = document.getElementById("testName");
+const testCourse = document.getElementById("testCourse");
+const testQuestions = document.getElementById("testQuestions");
+const testDuration = document.getElementById("testDuration");
+const testStatus = document.getElementById("testStatus");
 
-/* ========= NAV ========= */
-function setActiveSection(key) {
-  document.querySelectorAll(".nav-link").forEach(btn => {
-    btn.classList.toggle("active", btn.dataset.section === key);
-  });
-  document.querySelectorAll(".section").forEach(sec => sec.classList.remove("active"));
-  const target = document.getElementById(`section-${key}`);
-  if (target) target.classList.add("active");
-}
+const updateForm = document.getElementById("updateForm");
+const updateTitle = document.getElementById("updateTitle");
+const updateAudience = document.getElementById("updateAudience");
+const updateBody = document.getElementById("updateBody");
 
-function initNav() {
-  document.querySelectorAll(".nav-link").forEach(btn => {
-    btn.addEventListener("click", () => setActiveSection(btn.dataset.section));
-  });
-}
-
-/* ========= GLOBAL STATE ========= */
-let courses = [];
-let tests = [];
-let updates = [];
-
-let currentContentCourseId = null;
-let currentContentTestId = null;
-
-let editingCourseId = null;
-let editingTestId = null;
-let editingUpdateId = null;
-
-/* ====== CONTENT STATE (UI Editors) ====== */
-const ccState = { modules: [] }; // Course content: modules -> items
-const tcState = { questions: [] }; // Test content: questions array
-
-/* ========= LOAD DATA ========= */
-async function fetchCourses() { courses = await api("/courses"); }
-async function fetchTests() { tests = await api("/tests"); }
-async function fetchUpdates() { updates = await api("/updates"); }
-
-function renderStats() {
-  document.getElementById("stat-courses").textContent = courses.length;
-  document.getElementById("stat-tests").textContent = tests.length;
-  document.getElementById("stat-updates").textContent = updates.length;
-}
-
-/* ========= COURSES TABLE ========= */
-async function renderCourses() {
-  await fetchCourses();
-  const tbody = document.querySelector("#coursesTable tbody");
-  tbody.innerHTML = "";
-
-  courses.forEach((c, i) => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${i + 1}</td>
-      <td>${c.title}</td>
-      <td>${c.level || "-"}</td>
-      <td>${c.type || "free"}</td>
-      <td>₹${c.price || 0}</td>
-      <td>
-        <button class="btn-secondary" onclick="openCourseContentEditor(${c.id})">Content</button>
-        <button class="btn-secondary" onclick="startEditCourse(${c.id})">Edit</button>
-        <button class="btn-secondary" onclick="deleteCourse(${c.id})">Delete</button>
-      </td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
-
-/* ========= TESTS TABLE ========= */
-async function renderTests() {
-  await fetchTests();
-  const tbody = document.querySelector("#testsTable tbody");
-  tbody.innerHTML = "";
-
-  tests.forEach((t, i) => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${i + 1}</td>
-      <td>${t.name}</td>
-      <td>${t.course || "-"}</td>
-      <td>${t.questions ?? "-"}</td>
-      <td>${t.duration || "-"}</td>
-      <td>${t.status || "free"}</td>
-      <td>
-        <button class="btn-secondary" onclick="openTestContentEditor(${t.id})">Content</button>
-        <button class="btn-secondary" onclick="startEditTest(${t.id})">Edit</button>
-        <button class="btn-secondary" onclick="deleteTest(${t.id})">Delete</button>
-      </td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
-
-/* ========= UPDATES TABLE ========= */
-async function renderUpdates() {
-  await fetchUpdates();
-  const tbody = document.querySelector("#updatesTable tbody");
-  tbody.innerHTML = "";
-
-  updates.forEach((u, i) => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${i + 1}</td>
-      <td>${u.title}</td>
-      <td>${u.audience || "All"}</td>
-      <td>${u.created_at || "-"}</td>
-      <td>
-        <button class="btn-secondary" onclick="startEditUpdate(${u.id})">Edit</button>
-        <button class="btn-secondary" onclick="deleteUpdate(${u.id})">Delete</button>
-      </td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
-
-/* =========================
-   CRUD FORMS
-========================= */
-
-/* --- Courses form --- */
-document.getElementById("courseForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const payload = {
-    title: document.getElementById("courseTitle").value.trim(),
-    level: document.getElementById("courseLevel").value.trim(),
-    type: document.getElementById("courseType").value,
-    price: Number(document.getElementById("coursePrice").value || 0),
-    subtitle: document.getElementById("courseSubtitle").value.trim(),
-  };
-
-  try {
-    if (!payload.title) return alert("Course title required");
-
-    if (editingCourseId) {
-      await api(`/courses/${editingCourseId}`, { method: "PUT", body: JSON.stringify(payload) });
-      editingCourseId = null;
-      document.getElementById("courseCancelEditBtn").style.display = "none";
-    } else {
-      await api("/courses", { method: "POST", body: JSON.stringify(payload) });
-    }
-
-    e.target.reset();
-    await renderCourses();
-    renderStats();
-    alert("Saved ✅");
-  } catch (err) {
-    alert("Course save failed: " + err.message);
-  }
-});
-
-function startEditCourse(id) {
-  const c = courses.find(x => x.id === id);
-  if (!c) return;
-
-  editingCourseId = id;
-  document.getElementById("courseTitle").value = c.title || "";
-  document.getElementById("courseLevel").value = c.level || "";
-  document.getElementById("courseType").value = c.type || "free";
-  document.getElementById("coursePrice").value = c.price || 0;
-  document.getElementById("courseSubtitle").value = c.subtitle || "";
-  document.getElementById("courseCancelEditBtn").style.display = "inline-flex";
-  setActiveSection("courses");
-  window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
-}
-
-document.getElementById("courseCancelEditBtn").addEventListener("click", () => {
-  editingCourseId = null;
-  document.getElementById("courseForm").reset();
-  document.getElementById("courseCancelEditBtn").style.display = "none";
-});
-
-async function deleteCourse(id) {
-  if (!confirm("Delete this course?")) return;
-  try {
-    await api(`/courses/${id}`, { method: "DELETE" });
-    await renderCourses();
-    renderStats();
-  } catch (err) {
-    alert("Delete failed: " + err.message);
-  }
-}
-
-/* --- Tests form --- */
-document.getElementById("testForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const payload = {
-    name: document.getElementById("testName").value.trim(),
-    course: document.getElementById("testCourse").value.trim(),
-    questions: Number(document.getElementById("testQuestions").value || 0),
-    duration: document.getElementById("testDuration").value.trim(),
-    status: document.getElementById("testStatus").value,
-  };
-
-  try {
-    if (!payload.name) return alert("Test title required");
-
-    if (editingTestId) {
-      await api(`/tests/${editingTestId}`, { method: "PUT", body: JSON.stringify(payload) });
-      editingTestId = null;
-      document.getElementById("testCancelEditBtn").style.display = "none";
-    } else {
-      await api("/tests", { method: "POST", body: JSON.stringify(payload) });
-    }
-
-    e.target.reset();
-    await renderTests();
-    renderStats();
-    alert("Saved ✅");
-  } catch (err) {
-    alert("Test save failed: " + err.message);
-  }
-});
-
-function startEditTest(id) {
-  const t = tests.find(x => x.id === id);
-  if (!t) return;
-
-  editingTestId = id;
-  document.getElementById("testName").value = t.name || "";
-  document.getElementById("testCourse").value = t.course || "";
-  document.getElementById("testQuestions").value = t.questions || 0;
-  document.getElementById("testDuration").value = t.duration || "";
-  document.getElementById("testStatus").value = t.status || "free";
-  document.getElementById("testCancelEditBtn").style.display = "inline-flex";
-  setActiveSection("tests");
-  window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
-}
-
-document.getElementById("testCancelEditBtn").addEventListener("click", () => {
-  editingTestId = null;
-  document.getElementById("testForm").reset();
-  document.getElementById("testCancelEditBtn").style.display = "none";
-});
-
-async function deleteTest(id) {
-  if (!confirm("Delete this test?")) return;
-  try {
-    await api(`/tests/${id}`, { method: "DELETE" });
-    await renderTests();
-    renderStats();
-  } catch (err) {
-    alert("Delete failed: " + err.message);
-  }
-}
-
-/* --- Updates form --- */
-document.getElementById("updateForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const payload = {
-    title: document.getElementById("updateTitle").value.trim(),
-    audience: document.getElementById("updateAudience").value.trim(),
-    body: document.getElementById("updateBody").value.trim(),
-  };
-
-  try {
-    if (!payload.title) return alert("Update title required");
-
-    if (editingUpdateId) {
-      await api(`/updates/${editingUpdateId}`, { method: "PUT", body: JSON.stringify(payload) });
-      editingUpdateId = null;
-      document.getElementById("updateCancelEditBtn").style.display = "none";
-    } else {
-      await api("/updates", { method: "POST", body: JSON.stringify(payload) });
-    }
-
-    e.target.reset();
-    await renderUpdates();
-    renderStats();
-    alert("Saved ✅");
-  } catch (err) {
-    alert("Update save failed: " + err.message);
-  }
-});
-
-function startEditUpdate(id) {
-  const u = updates.find(x => x.id === id);
-  if (!u) return;
-
-  editingUpdateId = id;
-  document.getElementById("updateTitle").value = u.title || "";
-  document.getElementById("updateAudience").value = u.audience || "";
-  document.getElementById("updateBody").value = u.body || "";
-  document.getElementById("updateCancelEditBtn").style.display = "inline-flex";
-  setActiveSection("updates");
-  window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
-}
-
-document.getElementById("updateCancelEditBtn").addEventListener("click", () => {
-  editingUpdateId = null;
-  document.getElementById("updateForm").reset();
-  document.getElementById("updateCancelEditBtn").style.display = "none";
-});
-
-async function deleteUpdate(id) {
-  if (!confirm("Delete this update?")) return;
-  try {
-    await api(`/updates/${id}`, { method: "DELETE" });
-    await renderUpdates();
-    renderStats();
-  } catch (err) {
-    alert("Delete failed: " + err.message);
-  }
-}
-
-/* =========================
-   COURSE CONTENT EDITOR (UI)
-========================= */
-
-const courseContentEditorEl = document.getElementById("courseContentEditor");
+/* Content Editors (Course/Test) */
+const courseContentEditor = document.getElementById("courseContentEditor");
 const ccCourseTitleEl = document.getElementById("ccCourseTitle");
 const ccSectionsContainer = document.getElementById("ccSectionsContainer");
-const ccJsonOutput = document.getElementById("ccJsonOutput");
-
-const ccAddSectionBtn = document.getElementById("ccAddSectionBtn");
 const ccShowJsonBtn = document.getElementById("ccShowJsonBtn");
 const ccCopyJsonBtn = document.getElementById("ccCopyJsonBtn");
-const ccSaveBtn = document.getElementById("ccSaveBtn");
+const ccJsonOutput = document.getElementById("ccJsonOutput");
+const ccAddSectionBtn = document.getElementById("ccAddSectionBtn");
 
-function normalizeCourseContent(data) {
-  // Accept {modules:[]}, {sections:[]}, or [] directly
-  if (Array.isArray(data)) return { modules: data };
-  if (data && Array.isArray(data.modules)) return { modules: data.modules };
-  if (data && Array.isArray(data.sections)) {
-    // legacy sections -> modules mapping (best-effort)
-    const modules = data.sections.map((s, idx) => ({
-      id: s.id || uid("mod"),
-      title: s.title || `Section ${idx+1}`,
-      description: s.description || "",
-      order: Number(s.order ?? idx),
-      items: Array.isArray(s.items) ? s.items : (Array.isArray(s.lessons) ? s.lessons : []),
-    }));
-    return { modules };
-  }
-  return { modules: [] };
-}
-
-function renderCourseContentEditor() {
-  ccSectionsContainer.innerHTML = "";
-
-  ccState.modules
-    .sort((a,b) => (a.order ?? 0) - (b.order ?? 0))
-    .forEach((mod, modIndex) => {
-      if (!mod.id) mod.id = uid("mod");
-      if (!Array.isArray(mod.items)) mod.items = [];
-
-      const card = document.createElement("div");
-      card.className = "cc-section-card";
-
-      card.innerHTML = `
-        <div class="cc-section-header">
-          <div style="flex:1; min-width:260px;">
-            <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
-              <input
-                style="flex:1; min-width:200px; border-radius:8px; border:1px solid #e5e7eb; padding:7px 9px; font-size:13px;"
-                placeholder="Section title"
-                value="${(mod.title || "").replaceAll('"','&quot;')}"
-                data-cc="mod-title"
-                data-mod="${modIndex}"
-              />
-              <input
-                style="width:90px; border-radius:8px; border:1px solid #e5e7eb; padding:7px 9px; font-size:13px;"
-                type="number"
-                placeholder="Order"
-                value="${mod.order ?? modIndex}"
-                data-cc="mod-order"
-                data-mod="${modIndex}"
-              />
-            </div>
-            <div style="margin-top:8px;">
-              <textarea
-                style="width:100%; border-radius:8px; border:1px solid #e5e7eb; padding:7px 9px; font-size:13px;"
-                rows="2"
-                placeholder="Section description (optional)"
-                data-cc="mod-desc"
-                data-mod="${modIndex}"
-              >${mod.description || ""}</textarea>
-            </div>
-          </div>
-
-          <div class="cc-section-actions">
-            <button class="btn-secondary" data-cc="mod-up" data-mod="${modIndex}">↑</button>
-            <button class="btn-secondary" data-cc="mod-down" data-mod="${modIndex}">↓</button>
-            <button class="btn-secondary" data-cc="add-item" data-mod="${modIndex}">+ Lesson</button>
-            <button class="btn-secondary" data-cc="delete-mod" data-mod="${modIndex}">Delete</button>
-          </div>
-        </div>
-
-        <div class="cc-lessons-wrapper">
-          <table class="cc-lessons-table">
-            <thead>
-              <tr>
-                <th style="width:30px;">#</th>
-                <th>Title</th>
-                <th style="width:90px;">Type</th>
-                <th style="width:90px;">Duration</th>
-                <th style="width:90px;">Lock</th>
-                <th style="width:90px;">Preview</th>
-                <th style="width:260px;">Link / URL</th>
-                <th style="width:140px;">Actions</th>
-              </tr>
-            </thead>
-            <tbody data-cc="items-body" data-mod="${modIndex}"></tbody>
-          </table>
-        </div>
-      `;
-
-      ccSectionsContainer.appendChild(card);
-
-      const tbody = card.querySelector('tbody[data-cc="items-body"]');
-
-      mod.items.forEach((it, itemIndex) => {
-        if (!it.id) it.id = uid("item");
-        if (!it.type) it.type = "video";
-
-        const linkValue = it.video_url || it.pdf_url || it.external_link || it.quiz_id || "";
-
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${itemIndex + 1}</td>
-          <td>
-            <input
-              style="width:100%; border-radius:8px; border:1px solid #e5e7eb; padding:6px 8px; font-size:12px;"
-              placeholder="Lesson title"
-              value="${(it.title || "").replaceAll('"','&quot;')}"
-              data-cc="item-title"
-              data-mod="${modIndex}"
-              data-item="${itemIndex}"
-            />
-            <textarea
-              style="width:100%; margin-top:6px; border-radius:8px; border:1px solid #e5e7eb; padding:6px 8px; font-size:12px;"
-              rows="2"
-              placeholder="Description (optional)"
-              data-cc="item-desc"
-              data-mod="${modIndex}"
-              data-item="${itemIndex}"
-            >${it.description || ""}</textarea>
-          </td>
-          <td>
-            <select
-              style="width:100%; border-radius:8px; border:1px solid #e5e7eb; padding:6px 8px; font-size:12px;"
-              data-cc="item-type"
-              data-mod="${modIndex}"
-              data-item="${itemIndex}"
-            >
-              <option value="video" ${it.type==="video" ? "selected" : ""}>video</option>
-              <option value="pdf" ${it.type==="pdf" ? "selected" : ""}>pdf</option>
-              <option value="note" ${it.type==="note" ? "selected" : ""}>note</option>
-              <option value="quiz" ${it.type==="quiz" ? "selected" : ""}>quiz</option>
-              <option value="link" ${it.type==="link" ? "selected" : ""}>link</option>
-            </select>
-          </td>
-          <td>
-            <input
-              type="number"
-              style="width:100%; border-radius:8px; border:1px solid #e5e7eb; padding:6px 8px; font-size:12px;"
-              placeholder="min"
-              value="${it.duration_minutes ?? ""}"
-              data-cc="item-duration"
-              data-mod="${modIndex}"
-              data-item="${itemIndex}"
-            />
-          </td>
-          <td>
-            <label style="display:flex; gap:6px; align-items:center; font-size:12px;">
-              <input type="checkbox" ${it.is_locked ? "checked":""}
-                data-cc="item-locked" data-mod="${modIndex}" data-item="${itemIndex}" />
-              ${it.is_locked ? `<span class="cc-tag-lock">Locked</span>` : `<span class="cc-tag-unlock">Open</span>`}
-            </label>
-          </td>
-          <td>
-            <label style="display:flex; gap:6px; align-items:center; font-size:12px;">
-              <input type="checkbox" ${it.is_preview ? "checked":""}
-                data-cc="item-preview" data-mod="${modIndex}" data-item="${itemIndex}" />
-              Preview
-            </label>
-          </td>
-          <td>
-            <input
-              style="width:100%; border-radius:8px; border:1px solid #e5e7eb; padding:6px 8px; font-size:12px;"
-              placeholder="video/pdf/link/quiz id"
-              value="${(linkValue || "").replaceAll('"','&quot;')}"
-              data-cc="item-link"
-              data-mod="${modIndex}"
-              data-item="${itemIndex}"
-            />
-            <div style="margin-top:4px; font-size:11px; color:#6b7280;">
-              video_url / pdf_url / external_link / quiz_id (type ke hisaab se)
-            </div>
-          </td>
-          <td>
-            <button class="btn-secondary" data-cc="item-up" data-mod="${modIndex}" data-item="${itemIndex}">↑</button>
-            <button class="btn-secondary" data-cc="item-down" data-mod="${modIndex}" data-item="${itemIndex}">↓</button>
-            <button class="btn-secondary" data-cc="delete-item" data-mod="${modIndex}" data-item="${itemIndex}">Delete</button>
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
-  });
-
-  // update JSON box if visible
-  if (ccJsonOutput.style.display !== "none") {
-    ccJsonOutput.value = JSON.stringify({ modules: ccState.modules }, null, 2);
-  }
-}
-
-function wireCourseContentEvents() {
-  // input updates (delegation)
-  courseContentEditorEl.addEventListener("input", (e) => {
-    const t = e.target;
-    if (!t.dataset || !t.dataset.cc) return;
-
-    const cc = t.dataset.cc;
-    const modIndex = Number(t.dataset.mod);
-    const itemIndex = t.dataset.item !== undefined ? Number(t.dataset.item) : null;
-
-    if (Number.isNaN(modIndex)) return;
-
-    const mod = ccState.modules[modIndex];
-    if (!mod) return;
-
-    if (cc === "mod-title") mod.title = t.value;
-    if (cc === "mod-desc") mod.description = t.value;
-    if (cc === "mod-order") mod.order = Number(t.value || 0);
-
-    if (itemIndex !== null) {
-      const it = mod.items[itemIndex];
-      if (!it) return;
-
-      if (cc === "item-title") it.title = t.value;
-      if (cc === "item-desc") it.description = t.value;
-      if (cc === "item-type") {
-        it.type = t.value;
-
-        // clear link fields so mapping is clean
-        it.video_url = null; it.pdf_url = null; it.external_link = null; it.quiz_id = null;
-      }
-      if (cc === "item-duration") it.duration_minutes = t.value ? Number(t.value) : null;
-      if (cc === "item-link") {
-        const val = t.value.trim();
-        // map based on type
-        it.video_url = null; it.pdf_url = null; it.external_link = null; it.quiz_id = null;
-        if (!val) return;
-
-        if (it.type === "video") it.video_url = val;
-        else if (it.type === "pdf") it.pdf_url = val;
-        else if (it.type === "link") it.external_link = val;
-        else if (it.type === "quiz") it.quiz_id = val;
-        else it.external_link = val;
-      }
-    }
-  });
-
-  courseContentEditorEl.addEventListener("change", (e) => {
-    const t = e.target;
-    if (!t.dataset || !t.dataset.cc) return;
-
-    const cc = t.dataset.cc;
-    const modIndex = Number(t.dataset.mod);
-    const itemIndex = t.dataset.item !== undefined ? Number(t.dataset.item) : null;
-    const mod = ccState.modules[modIndex];
-    if (!mod) return;
-
-    if (itemIndex !== null) {
-      const it = mod.items[itemIndex];
-      if (!it) return;
-
-      if (cc === "item-locked") it.is_locked = !!t.checked;
-      if (cc === "item-preview") it.is_preview = !!t.checked;
-
-      // refresh to update lock badges
-      renderCourseContentEditor();
-    }
-  });
-
-  courseContentEditorEl.addEventListener("click", (e) => {
-    const btn = e.target.closest("button");
-    if (!btn || !btn.dataset || !btn.dataset.cc) return;
-
-    const cc = btn.dataset.cc;
-    const modIndex = Number(btn.dataset.mod);
-    const itemIndex = btn.dataset.item !== undefined ? Number(btn.dataset.item) : null;
-
-    if (cc === "delete-mod") {
-      if (!confirm("Delete this section?")) return;
-      ccState.modules.splice(modIndex, 1);
-      renderCourseContentEditor();
-      return;
-    }
-
-    if (cc === "mod-up" && modIndex > 0) {
-      const tmp = ccState.modules[modIndex - 1];
-      ccState.modules[modIndex - 1] = ccState.modules[modIndex];
-      ccState.modules[modIndex] = tmp;
-      renderCourseContentEditor();
-      return;
-    }
-
-    if (cc === "mod-down" && modIndex < ccState.modules.length - 1) {
-      const tmp = ccState.modules[modIndex + 1];
-      ccState.modules[modIndex + 1] = ccState.modules[modIndex];
-      ccState.modules[modIndex] = tmp;
-      renderCourseContentEditor();
-      return;
-    }
-
-    if (cc === "add-item") {
-      const mod = ccState.modules[modIndex];
-      if (!mod.items) mod.items = [];
-      mod.items.push({
-        id: uid("item"),
-        type: "video",
-        title: "New lesson",
-        description: "",
-        duration_minutes: null,
-        is_locked: false,
-        is_preview: false,
-        video_url: "",
-        pdf_url: null,
-        external_link: null,
-        quiz_id: null,
-      });
-      renderCourseContentEditor();
-      return;
-    }
-
-    if (cc === "delete-item" && itemIndex !== null) {
-      if (!confirm("Delete this lesson?")) return;
-      ccState.modules[modIndex].items.splice(itemIndex, 1);
-      renderCourseContentEditor();
-      return;
-    }
-
-    if (cc === "item-up" && itemIndex !== null && itemIndex > 0) {
-      const items = ccState.modules[modIndex].items;
-      [items[itemIndex - 1], items[itemIndex]] = [items[itemIndex], items[itemIndex - 1]];
-      renderCourseContentEditor();
-      return;
-    }
-
-    if (cc === "item-down" && itemIndex !== null) {
-      const items = ccState.modules[modIndex].items;
-      if (itemIndex < items.length - 1) {
-        [items[itemIndex + 1], items[itemIndex]] = [items[itemIndex], items[itemIndex + 1]];
-        renderCourseContentEditor();
-      }
-      return;
-    }
-  });
-
-  ccAddSectionBtn.addEventListener("click", () => {
-    ccState.modules.push({
-      id: uid("mod"),
-      title: `New section`,
-      description: "",
-      order: ccState.modules.length,
-      items: [],
-    });
-    renderCourseContentEditor();
-  });
-
-  ccShowJsonBtn.addEventListener("click", () => {
-    const show = ccJsonOutput.style.display === "none";
-    ccJsonOutput.style.display = show ? "block" : "none";
-    if (show) ccJsonOutput.value = JSON.stringify({ modules: ccState.modules }, null, 2);
-  });
-
-  ccCopyJsonBtn.addEventListener("click", async () => {
-    const txt = JSON.stringify({ modules: ccState.modules }, null, 2);
-    await navigator.clipboard.writeText(txt);
-    alert("Copied JSON ✅");
-  });
-
-  ccSaveBtn.addEventListener("click", async () => {
-    if (!currentContentCourseId) return alert("Open a course first.");
-    try {
-      await api(`/courses/${currentContentCourseId}/content`, {
-        method: "PUT",
-        body: JSON.stringify({ modules: ccState.modules }),
-      });
-      alert("Course content saved ✅");
-    } catch (err) {
-      alert("Save failed: " + err.message);
-    }
-  });
-}
-
-async function openCourseContentEditor(courseId) {
-  try {
-    const c = courses.find(x => x.id === courseId);
-    currentContentCourseId = courseId;
-
-    const raw = await api(`/courses/${courseId}/content`);
-    const norm = normalizeCourseContent(raw);
-
-    ccState.modules = norm.modules;
-    ccCourseTitleEl.textContent = c ? c.title : `Course #${courseId}`;
-
-    courseContentEditorEl.style.display = "block";
-    setActiveSection("courses");
-    renderCourseContentEditor();
-    alert("Course content loaded ✅");
-  } catch (err) {
-    alert("Content load failed: " + err.message);
-  }
-}
-
-/* =========================
-   TEST QUESTIONS EDITOR (UI)
-========================= */
-
-const testContentEditorEl = document.getElementById("testContentEditor");
+const testContentEditor = document.getElementById("testContentEditor");
 const tcTestTitleEl = document.getElementById("tcTestTitle");
 const tcQuestionsContainer = document.getElementById("tcQuestionsContainer");
 const tcAddQuestionBtn = document.getElementById("tcAddQuestionBtn");
-const tcSaveBtn = document.getElementById("tcSaveBtn");
 
-function normalizeTestQuestions(data) {
-  // Accept [] or {questions:[]}
-  if (Array.isArray(data)) return data;
-  if (data && Array.isArray(data.questions)) return data.questions;
-  return [];
+/* ========= UTIL ========= */
+function escapeHtml(s) {
+  return String(s ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
 
-function newQuestion() {
-  return {
-    id: uid("q"),
-    question: "",
-    options: ["", "", "", ""],
-    correctIndex: 0,
-    explanation: "",
-    marks: 1,
-    negative: 0,
-  };
-}
-
-function renderTestQuestionsEditor() {
-  tcQuestionsContainer.innerHTML = "";
-
-  tcState.questions.forEach((q, qi) => {
-    if (!q.id) q.id = uid("q");
-    if (!Array.isArray(q.options)) q.options = ["", "", "", ""];
-
-    const card = document.createElement("div");
-    card.className = "cc-section-card";
-    card.innerHTML = `
-      <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;">
-        <div style="font-weight:700;">Q${qi + 1}</div>
-        <div style="display:flex; gap:8px; flex-wrap:wrap;">
-          <button class="btn-secondary" data-tc="q-up" data-qi="${qi}">↑</button>
-          <button class="btn-secondary" data-tc="q-down" data-qi="${qi}">↓</button>
-          <button class="btn-secondary" data-tc="q-delete" data-qi="${qi}">Delete</button>
-        </div>
-      </div>
-
-      <div style="margin-top:10px;">
-        <textarea
-          rows="2"
-          style="width:100%; border-radius:8px; border:1px solid #e5e7eb; padding:7px 9px; font-size:13px;"
-          placeholder="Question text"
-          data-tc="q-text"
-          data-qi="${qi}"
-        >${q.question || ""}</textarea>
-      </div>
-
-      <div style="margin-top:10px; display:grid; grid-template-columns: 1fr; gap:8px;">
-        ${q.options.map((op, oi) => `
-          <div style="display:flex; gap:8px; align-items:center;">
-            <div style="width:22px; font-weight:700;">${String.fromCharCode(65+oi)}.</div>
-            <input
-              style="flex:1; border-radius:8px; border:1px solid #e5e7eb; padding:7px 9px; font-size:13px;"
-              placeholder="Option ${oi+1}"
-              value="${(op || "").replaceAll('"','&quot;')}"
-              data-tc="opt"
-              data-qi="${qi}"
-              data-oi="${oi}"
-            />
-            <button class="btn-secondary" data-tc="opt-del" data-qi="${qi}" data-oi="${oi}">X</button>
-          </div>
-        `).join("")}
-
-        <div style="display:flex; gap:8px; flex-wrap:wrap;">
-          <button class="btn-secondary" data-tc="opt-add" data-qi="${qi}">+ Add option</button>
-        </div>
-      </div>
-
-      <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
-        <div style="min-width:220px;">
-          <div style="font-size:12px; color:#6b7280; margin-bottom:4px;">Correct option</div>
-          <select
-            style="width:220px; border-radius:8px; border:1px solid #e5e7eb; padding:7px 9px; font-size:13px;"
-            data-tc="correct"
-            data-qi="${qi}"
-          >
-            ${q.options.map((_, oi) => `<option value="${oi}" ${q.correctIndex==oi ? "selected":""}>${String.fromCharCode(65+oi)}</option>`).join("")}
-          </select>
-        </div>
-
-        <div>
-          <div style="font-size:12px; color:#6b7280; margin-bottom:4px;">Marks</div>
-          <input type="number" step="0.5"
-            style="width:120px; border-radius:8px; border:1px solid #e5e7eb; padding:7px 9px; font-size:13px;"
-            value="${q.marks ?? 1}"
-            data-tc="marks"
-            data-qi="${qi}"
-          />
-        </div>
-
-        <div>
-          <div style="font-size:12px; color:#6b7280; margin-bottom:4px;">Negative</div>
-          <input type="number" step="0.5"
-            style="width:120px; border-radius:8px; border:1px solid #e5e7eb; padding:7px 9px; font-size:13px;"
-            value="${q.negative ?? 0}"
-            data-tc="neg"
-            data-qi="${qi}"
-          />
-        </div>
-      </div>
-
-      <div style="margin-top:10px;">
-        <textarea
-          rows="2"
-          style="width:100%; border-radius:8px; border:1px solid #e5e7eb; padding:7px 9px; font-size:13px;"
-          placeholder="Explanation (optional)"
-          data-tc="exp"
-          data-qi="${qi}"
-        >${q.explanation || ""}</textarea>
-      </div>
-    `;
-    tcQuestionsContainer.appendChild(card);
-  });
-}
-
-function wireTestContentEvents() {
-  testContentEditorEl.addEventListener("input", (e) => {
-    const t = e.target;
-    if (!t.dataset || !t.dataset.tc) return;
-
-    const key = t.dataset.tc;
-    const qi = Number(t.dataset.qi);
-    const oi = t.dataset.oi !== undefined ? Number(t.dataset.oi) : null;
-
-    const q = tcState.questions[qi];
-    if (!q) return;
-
-    if (key === "q-text") q.question = t.value;
-    if (key === "opt" && oi !== null) q.options[oi] = t.value;
-    if (key === "exp") q.explanation = t.value;
-    if (key === "marks") q.marks = Number(t.value || 0);
-    if (key === "neg") q.negative = Number(t.value || 0);
-  });
-
-  testContentEditorEl.addEventListener("change", (e) => {
-    const t = e.target;
-    if (!t.dataset || !t.dataset.tc) return;
-
-    const key = t.dataset.tc;
-    const qi = Number(t.dataset.qi);
-
-    const q = tcState.questions[qi];
-    if (!q) return;
-
-    if (key === "correct") q.correctIndex = Number(t.value || 0);
-  });
-
-  testContentEditorEl.addEventListener("click", (e) => {
-    const btn = e.target.closest("button");
-    if (!btn || !btn.dataset || !btn.dataset.tc) return;
-
-    const key = btn.dataset.tc;
-    const qi = Number(btn.dataset.qi);
-    const oi = btn.dataset.oi !== undefined ? Number(btn.dataset.oi) : null;
-
-    if (key === "q-delete") {
-      if (!confirm("Delete this question?")) return;
-      tcState.questions.splice(qi, 1);
-      renderTestQuestionsEditor();
-      return;
-    }
-
-    if (key === "q-up" && qi > 0) {
-      [tcState.questions[qi-1], tcState.questions[qi]] = [tcState.questions[qi], tcState.questions[qi-1]];
-      renderTestQuestionsEditor();
-      return;
-    }
-
-    if (key === "q-down" && qi < tcState.questions.length - 1) {
-      [tcState.questions[qi+1], tcState.questions[qi]] = [tcState.questions[qi], tcState.questions[qi+1]];
-      renderTestQuestionsEditor();
-      return;
-    }
-
-    if (key === "opt-add") {
-      const q = tcState.questions[qi];
-      q.options.push("");
-      renderTestQuestionsEditor();
-      return;
-    }
-
-    if (key === "opt-del" && oi !== null) {
-      const q = tcState.questions[qi];
-      if (q.options.length <= 2) return alert("Minimum 2 options required.");
-      q.options.splice(oi, 1);
-      if (q.correctIndex >= q.options.length) q.correctIndex = 0;
-      renderTestQuestionsEditor();
-      return;
-    }
-  });
-
-  tcAddQuestionBtn.addEventListener("click", () => {
-    tcState.questions.push(newQuestion());
-    renderTestQuestionsEditor();
-  });
-
-  tcSaveBtn.addEventListener("click", async () => {
-    if (!currentContentTestId) return alert("Open a test first.");
-    try {
-      await api(`/tests/${currentContentTestId}/questions`, {
-        method: "PUT",
-        body: JSON.stringify(tcState.questions),
-      });
-      alert("Test questions saved ✅");
-    } catch (err) {
-      alert("Save failed: " + err.message);
-    }
-  });
-}
-
-async function openTestContentEditor(testId) {
+function isLikelyUrl(s) {
+  const v = String(s || "").trim();
+  if (!v) return false;
   try {
-    const t = tests.find(x => x.id === testId);
-    currentContentTestId = testId;
-
-    const raw = await api(`/tests/${testId}/questions`);
-    tcState.questions = normalizeTestQuestions(raw);
-
-    tcTestTitleEl.textContent = t ? t.name : `Test #${testId}`;
-    testContentEditorEl.style.display = "block";
-
-    setActiveSection("tests");
-    renderTestQuestionsEditor();
-    alert("Test questions loaded ✅");
-  } catch (err) {
-    alert("Questions load failed: " + err.message);
+    const u = new URL(v);
+    return u.protocol === "http:" || u.protocol === "https:";
+  } catch (_) {
+    return false;
   }
 }
 
-/* ========= BOOTSTRAP ========= */
-async function bootstrapLoad() {
-  try {
-    initNav();
-    wireCourseContentEvents();
-    wireTestContentEvents();
+function toast(msg, type = "info") {
+  // quick toast using alert-like UI
+  // you can replace with nicer toast later
+  if (type === "error") console.error(msg);
+  if (type === "success") console.log(msg);
+  alert(msg);
+}
 
-    await renderCourses();
-    await renderTests();
-    await renderUpdates();
-    renderStats();
-    setActiveSection("overview");
-  } catch (err) {
-    alert("Bootstrap failed: " + err.message + "\n\n(backend running? API_BASE correct?)");
-    console.error(err);
+async function api(path, opts = {}) {
+  const res = await fetch(`${API_BASE}${path}`, {
+    headers: { "Content-Type": "application/json", ...(opts.headers || {}) },
+    ...opts,
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`${res.status} ${res.statusText}\n${text}`);
   }
+  const ct = res.headers.get("content-type") || "";
+  if (ct.includes("application/json")) return await res.json();
+  return await res.text();
 }
 
 /* ========= AUTH ========= */
@@ -1433,11 +545,10 @@ auth.onAuthStateChanged((user) => {
     window.location.href = "index.html";
     return;
   }
-
   adminEmailEl.textContent = user.email;
-  avatarInitialEl.textContent = (user.email || "A").slice(0, 1).toUpperCase();
-
+  avatarInitialEl.textContent = (user.email || "A")[0].toUpperCase();
   overlay.style.display = "none";
+  initNav();
   bootstrapLoad();
 });
 
@@ -1445,6 +556,859 @@ logoutBtn.onclick = async () => {
   await auth.signOut();
   window.location.href = "index.html";
 };
+
+/* ========= GLOBAL STATE ========= */
+let courses = [];
+let tests = [];
+let updates = [];
+
+let editingCourseId = null;
+let editingTestId = null;
+let editingUpdateId = null;
+
+let currentContentCourseId = null;
+let currentContentCourse = null; // course row
+let currentCourseContent = { sections: [] };
+
+let currentContentTestId = null;
+let currentContentTest = null; // test row
+let currentTestQuestions = []; // array of questions
+
+/* ========= NAV (FIX STUCK DASHBOARD) ========= */
+function initNav() {
+  const navLinks = document.querySelectorAll(".nav-link");
+  const sections = document.querySelectorAll(".section");
+
+  navLinks.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const sec = btn.getAttribute("data-section");
+
+      navLinks.forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+
+      sections.forEach((s) => s.classList.remove("active"));
+      const target = document.getElementById(`section-${sec}`);
+      if (target) target.classList.add("active");
+    });
+  });
+}
+
+/* ========= FETCH ========= */
+async function fetchCourses() {
+  courses = await api("/courses");
+}
+async function fetchTests() {
+  tests = await api("/tests");
+}
+async function fetchUpdates() {
+  updates = await api("/updates");
+}
+
+/* ========= DASHBOARD STATS ========= */
+function renderStats() {
+  statCoursesEl.textContent = String(courses.length);
+  statTestsEl.textContent = String(tests.length);
+  statUpdatesEl.textContent = String(updates.length);
+}
+
+/* ========= COURSES CRUD ========= */
+async function renderCourses() {
+  await fetchCourses();
+  renderStats();
+
+  coursesTbody.innerHTML = "";
+  courses.forEach((c, i) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${i + 1}</td>
+      <td>${escapeHtml(c.title)}</td>
+      <td>${escapeHtml(c.level || "-")}</td>
+      <td>${escapeHtml(c.type || "free")}</td>
+      <td>₹${Number(c.price || 0)}</td>
+      <td>
+        <button class="btn-secondary" data-edit> Edit </button>
+        <button class="btn-secondary" data-content> Content </button>
+        <button class="btn-secondary" data-del> Delete </button>
+      </td>
+    `;
+    tr.querySelector("[data-edit]").onclick = () => startEditCourse(c);
+    tr.querySelector("[data-content]").onclick = () => openCourseContentEditor(c.id);
+    tr.querySelector("[data-del]").onclick = () => deleteCourse(c.id);
+    coursesTbody.appendChild(tr);
+  });
+}
+
+async function deleteCourse(id) {
+  if (!confirm("Delete course?")) return;
+  await api(`/courses/${id}`, { method: "DELETE" });
+  await renderCourses();
+}
+
+function startEditCourse(c) {
+  editingCourseId = c.id;
+  courseTitle.value = c.title || "";
+  courseLevel.value = c.level || "";
+  courseType.value = c.type || "free";
+  coursePrice.value = Number(c.price || 0);
+  courseSubtitle.value = c.subtitle || "";
+  toast("Editing course. Press Save course.", "success");
+}
+
+courseForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const payload = {
+    title: courseTitle.value.trim(),
+    level: courseLevel.value.trim(),
+    type: courseType.value,
+    price: Number(coursePrice.value || 0),
+    subtitle: courseSubtitle.value.trim(),
+  };
+  if (!payload.title) return toast("Course title required", "error");
+
+  if (editingCourseId) {
+    // if your backend has PUT /courses/:id, use it. If not, you can delete+recreate.
+    // For now we will call POST to create new if PUT not available.
+    try {
+      await api(`/courses/${editingCourseId}`, { method: "PUT", body: JSON.stringify(payload) });
+    } catch (_) {
+      // fallback: show message
+      toast("Backend PUT /courses/:id not found. Add route OR delete+create.", "error");
+      return;
+    }
+    editingCourseId = null;
+  } else {
+    await api("/courses", { method: "POST", body: JSON.stringify(payload) });
+  }
+
+  courseForm.reset();
+  await renderCourses();
+});
+
+/* ========= TESTS CRUD ========= */
+async function renderTests() {
+  await fetchTests();
+  renderStats();
+
+  testsTbody.innerHTML = "";
+  tests.forEach((t, i) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${i + 1}</td>
+      <td>${escapeHtml(t.name)}</td>
+      <td>${escapeHtml(t.course || "-")}</td>
+      <td>${escapeHtml(t.questions ?? "-")}</td>
+      <td>${escapeHtml(t.duration || "-")}</td>
+      <td>${escapeHtml(t.status || "free")}</td>
+      <td>
+        <button class="btn-secondary" data-edit> Edit </button>
+        <button class="btn-secondary" data-content> Questions </button>
+        <button class="btn-secondary" data-del> Delete </button>
+      </td>
+    `;
+    tr.querySelector("[data-edit]").onclick = () => startEditTest(t);
+    tr.querySelector("[data-content]").onclick = () => openTestContentEditor(t.id);
+    tr.querySelector("[data-del]").onclick = () => deleteTest(t.id);
+    testsTbody.appendChild(tr);
+  });
+}
+
+async function deleteTest(id) {
+  if (!confirm("Delete test?")) return;
+  await api(`/tests/${id}`, { method: "DELETE" });
+  await renderTests();
+}
+
+function startEditTest(t) {
+  editingTestId = t.id;
+  testName.value = t.name || "";
+  testCourse.value = t.course || "";
+  testQuestions.value = t.questions || 0;
+  testDuration.value = t.duration || "";
+  testStatus.value = t.status || "free";
+  toast("Editing test. Press Save test.", "success");
+}
+
+testForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const payload = {
+    name: testName.value.trim(),
+    course: testCourse.value.trim(),
+    questions: Number(testQuestions.value || 0),
+    duration: testDuration.value.trim(),
+    status: testStatus.value,
+  };
+  if (!payload.name) return toast("Test title required", "error");
+
+  if (editingTestId) {
+    try {
+      await api(`/tests/${editingTestId}`, { method: "PUT", body: JSON.stringify(payload) });
+    } catch (_) {
+      toast("Backend PUT /tests/:id not found. Add route OR delete+create.", "error");
+      return;
+    }
+    editingTestId = null;
+  } else {
+    await api("/tests", { method: "POST", body: JSON.stringify(payload) });
+  }
+
+  testForm.reset();
+  await renderTests();
+});
+
+/* ========= UPDATES CRUD ========= */
+async function renderUpdates() {
+  await fetchUpdates();
+  renderStats();
+
+  updatesTbody.innerHTML = "";
+  updates.forEach((u, i) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${i + 1}</td>
+      <td>${escapeHtml(u.title)}</td>
+      <td>${escapeHtml(u.audience || "All")}</td>
+      <td>${escapeHtml(u.created_at || "-")}</td>
+      <td>
+        <button class="btn-secondary" data-edit> Edit </button>
+        <button class="btn-secondary" data-del> Delete </button>
+      </td>
+    `;
+    tr.querySelector("[data-edit]").onclick = () => startEditUpdate(u);
+    tr.querySelector("[data-del]").onclick = () => deleteUpdate(u.id);
+    updatesTbody.appendChild(tr);
+  });
+}
+
+async function deleteUpdate(id) {
+  if (!confirm("Delete update?")) return;
+  await api(`/updates/${id}`, { method: "DELETE" });
+  await renderUpdates();
+}
+
+function startEditUpdate(u) {
+  editingUpdateId = u.id;
+  updateTitle.value = u.title || "";
+  updateAudience.value = u.audience || "";
+  updateBody.value = u.body || "";
+  toast("Editing update. Press Save update.", "success");
+}
+
+updateForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const payload = {
+    title: updateTitle.value.trim(),
+    audience: updateAudience.value.trim(),
+    body: updateBody.value.trim(),
+  };
+  if (!payload.title) return toast("Update title required", "error");
+
+  if (editingUpdateId) {
+    await api(`/updates/${editingUpdateId}`, { method: "PUT", body: JSON.stringify(payload) });
+    editingUpdateId = null;
+  } else {
+    await api("/updates", { method: "POST", body: JSON.stringify(payload) });
+  }
+
+  updateForm.reset();
+  await renderUpdates();
+});
+
+/* ======================================================
+   COURSE CONTENT EDITOR (FULLY WORKING)
+   - Dynamic field based on type
+   - Validation
+   - Open button (preview)
+   - Save to DB (PUT /courses/:id/content)
+   ====================================================== */
+
+function typeFieldConfig(type) {
+  switch (type) {
+    case "video": return { key: "video_url", label: "Video URL", placeholder: "https://..." };
+    case "pdf":   return { key: "pdf_url", label: "PDF URL", placeholder: "https://.../file.pdf" };
+    case "link":  return { key: "external_link", label: "External link", placeholder: "https://..." };
+    case "quiz":  return { key: "quiz_id", label: "Quiz/Test ID", placeholder: "e.g. 12 or test_12" };
+    case "note":  return { key: "description", label: "Note text", placeholder: "Write note..." };
+    default:      return { key: "external_link", label: "Value", placeholder: "..." };
+  }
+}
+
+function ensureItemKeys(it) {
+  it.id ??= String(Date.now() + Math.random());
+  it.type ??= "video";
+  it.title ??= "";
+  it.description ??= "";
+  it.duration_minutes ??= 0;
+  it.is_locked ??= false;
+  it.is_preview ??= false;
+
+  it.video_url ??= "";
+  it.pdf_url ??= "";
+  it.external_link ??= "";
+  it.quiz_id ??= "";
+}
+
+function getTypeValue(it) {
+  ensureItemKeys(it);
+  const cfg = typeFieldConfig(it.type);
+  return String(it[cfg.key] ?? "");
+}
+
+function setTypeValue(it, value) {
+  ensureItemKeys(it);
+  const cfg = typeFieldConfig(it.type);
+
+  // clean other fields so payload stays neat
+  if (cfg.key !== "video_url") it.video_url = "";
+  if (cfg.key !== "pdf_url") it.pdf_url = "";
+  if (cfg.key !== "external_link") it.external_link = "";
+  if (cfg.key !== "quiz_id") it.quiz_id = "";
+  if (cfg.key !== "description") it.description = "";
+
+  it[cfg.key] = value;
+}
+
+function normalizeCourseContentFromBackend(raw) {
+  // backend may return: {sections: []} OR {modules: []}
+  const sections = raw?.sections ?? raw?.modules ?? [];
+  // ensure structure: sections[{id,title,description,order,items:[]}]
+  return {
+    sections: (Array.isArray(sections) ? sections : []).map((s, idx) => ({
+      id: String(s.id ?? `sec_${idx}_${Date.now()}`),
+      title: s.title ?? "Untitled section",
+      description: s.description ?? "",
+      order: Number(s.order ?? idx),
+      items: (Array.isArray(s.items) ? s.items : []).map((it) => {
+        ensureItemKeys(it);
+        // map snake/camel just in case
+        it.duration_minutes ??= it.durationMinutes ?? 0;
+        it.is_locked ??= it.isLocked ?? false;
+        it.is_preview ??= it.isPreview ?? false;
+        it.video_url ??= it.videoUrl ?? "";
+        it.pdf_url ??= it.pdfUrl ?? "";
+        it.external_link ??= it.externalLink ?? "";
+        it.quiz_id ??= it.quizId ?? "";
+        return it;
+      }),
+    })),
+  };
+}
+
+function validateCourseContent(payload) {
+  const errors = [];
+  const sections = payload.sections || [];
+  if (!sections.length) errors.push("Add at least 1 section.");
+
+  sections.forEach((sec, sIdx) => {
+    if (!String(sec.title || "").trim()) errors.push(`Section ${sIdx + 1}: title required`);
+    const items = sec.items || [];
+    if (!items.length) errors.push(`Section ${sIdx + 1}: add at least 1 lesson`);
+
+    items.forEach((it, iIdx) => {
+      ensureItemKeys(it);
+      if (!String(it.title || "").trim()) errors.push(`Section ${sIdx + 1} Lesson ${iIdx + 1}: title required`);
+
+      const cfg = typeFieldConfig(it.type);
+      const v = String(it[cfg.key] || "").trim();
+
+      if (it.type === "video" || it.type === "pdf" || it.type === "link") {
+        if (!v) errors.push(`Section ${sIdx + 1} Lesson ${iIdx + 1}: ${cfg.label} required`);
+        else if (!isLikelyUrl(v)) errors.push(`Section ${sIdx + 1} Lesson ${iIdx + 1}: ${cfg.label} must be a valid URL`);
+      }
+      if (it.type === "quiz") {
+        if (!v) errors.push(`Section ${sIdx + 1} Lesson ${iIdx + 1}: Quiz/Test ID required`);
+      }
+      if (it.type === "note") {
+        if (!v) errors.push(`Section ${sIdx + 1} Lesson ${iIdx + 1}: Note text required`);
+      }
+    });
+  });
+
+  return errors;
+}
+
+async function openCourseContentEditor(courseId) {
+  currentContentCourseId = courseId;
+  currentContentCourse = courses.find((c) => c.id === courseId) || { title: `Course #${courseId}` };
+
+  // GET /courses/:id/content
+  const raw = await api(`/courses/${courseId}/content`);
+  currentCourseContent = normalizeCourseContentFromBackend(raw);
+
+  ccCourseTitleEl.textContent = currentContentCourse.title || `Course #${courseId}`;
+  courseContentEditor.style.display = "block";
+  renderCourseContentUI();
+
+  // scroll into view
+  courseContentEditor.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+async function saveCourseContent() {
+  if (!currentContentCourseId) return;
+
+  // sort order before save
+  currentCourseContent.sections.forEach((s, idx) => (s.order = idx));
+
+  const errors = validateCourseContent(currentCourseContent);
+  if (errors.length) {
+    toast("Fix these errors:\n\n• " + errors.join("\n• "), "error");
+    return;
+  }
+
+  await api(`/courses/${currentContentCourseId}/content`, {
+    method: "PUT",
+    body: JSON.stringify(currentCourseContent),
+  });
+  toast("Course content saved ✅", "success");
+}
+
+function renderCourseContentUI() {
+  ccSectionsContainer.innerHTML = "";
+
+  const sections = currentCourseContent.sections || [];
+  if (!sections.length) {
+    ccSectionsContainer.innerHTML = `<div class="muted">No sections yet. Click “Add section”.</div>`;
+    return;
+  }
+
+  sections.forEach((sec, sIdx) => {
+    const wrap = document.createElement("div");
+    wrap.className = "cc-section-card";
+
+    wrap.innerHTML = `
+      <div class="cc-section-header">
+        <div style="flex:1;min-width:200px;">
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <div class="cc-section-title">Section ${sIdx + 1}</div>
+            <button class="btn-secondary" data-move-up>↑</button>
+            <button class="btn-secondary" data-move-down>↓</button>
+          </div>
+
+          <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">
+            <input data-sec-title value="${escapeHtml(sec.title || "")}"
+              placeholder="Section title"
+              style="flex:1;min-width:220px;border:1px solid #e5e7eb;border-radius:8px;padding:7px 9px;font-size:13px;" />
+            <input data-sec-desc value="${escapeHtml(sec.description || "")}"
+              placeholder="Section description (optional)"
+              style="flex:2;min-width:260px;border:1px solid #e5e7eb;border-radius:8px;padding:7px 9px;font-size:13px;" />
+          </div>
+        </div>
+
+        <div class="cc-section-actions">
+          <button class="btn-secondary" data-add-lesson>+ Lesson</button>
+          <button class="btn-secondary" data-del-sec>Delete</button>
+        </div>
+      </div>
+
+      <div class="cc-lessons-wrapper">
+        <table class="cc-lessons-table">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Type</th>
+              <th>Type Field</th>
+              <th>Min</th>
+              <th>Locked</th>
+              <th>Preview</th>
+              <th style="width:150px;">Actions</th>
+            </tr>
+          </thead>
+          <tbody data-lessons></tbody>
+        </table>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;">
+          <button class="btn-primary" data-save>Save content</button>
+          <button class="btn-secondary" data-validate>Validate</button>
+        </div>
+      </div>
+    `;
+
+    // Section inputs
+    wrap.querySelector("[data-sec-title]").oninput = (e) => (sec.title = e.target.value);
+    wrap.querySelector("[data-sec-desc]").oninput = (e) => (sec.description = e.target.value);
+
+    // Move section
+    wrap.querySelector("[data-move-up]").onclick = () => {
+      if (sIdx === 0) return;
+      const tmp = sections[sIdx - 1];
+      sections[sIdx - 1] = sections[sIdx];
+      sections[sIdx] = tmp;
+      renderCourseContentUI();
+    };
+    wrap.querySelector("[data-move-down]").onclick = () => {
+      if (sIdx === sections.length - 1) return;
+      const tmp = sections[sIdx + 1];
+      sections[sIdx + 1] = sections[sIdx];
+      sections[sIdx] = tmp;
+      renderCourseContentUI();
+    };
+
+    // Add lesson
+    wrap.querySelector("[data-add-lesson]").onclick = () => {
+      sec.items ??= [];
+      sec.items.push({
+        id: String(Date.now() + Math.random()),
+        type: "video",
+        title: "",
+        duration_minutes: 0,
+        is_locked: false,
+        is_preview: false,
+        video_url: "",
+        pdf_url: "",
+        external_link: "",
+        quiz_id: "",
+        description: "",
+      });
+      renderCourseContentUI();
+    };
+
+    // Delete section
+    wrap.querySelector("[data-del-sec]").onclick = () => {
+      if (!confirm("Delete this section and its lessons?")) return;
+      sections.splice(sIdx, 1);
+      renderCourseContentUI();
+    };
+
+    // Save + Validate buttons
+    wrap.querySelector("[data-save]").onclick = () => saveCourseContent();
+    wrap.querySelector("[data-validate]").onclick = () => {
+      const errs = validateCourseContent(currentCourseContent);
+      if (!errs.length) toast("Validation OK ✅", "success");
+      else toast("Fix:\n\n• " + errs.join("\n• "), "error");
+    };
+
+    // Lessons table rows
+    const tbody = wrap.querySelector("[data-lessons]");
+    tbody.innerHTML = "";
+
+    const items = sec.items || [];
+    if (!items.length) {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td colspan="7" style="color:#6b7280;">No lessons yet. Click “+ Lesson”.</td>`;
+      tbody.appendChild(tr);
+    } else {
+      items.forEach((it, lIdx) => {
+        ensureItemKeys(it);
+        const cfg = typeFieldConfig(it.type);
+        const typeVal = getTypeValue(it);
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>
+            <input data-title value="${escapeHtml(it.title||"")}"
+              style="width:220px;border:1px solid #e5e7eb;border-radius:8px;padding:5px 7px;font-size:12px;" />
+          </td>
+
+          <td>
+            <select data-type style="border:1px solid #e5e7eb;border-radius:8px;padding:5px 7px;font-size:12px;">
+              ${["video","pdf","note","quiz","link"].map(t=>`<option value="${t}" ${it.type===t?"selected":""}>${t}</option>`).join("")}
+            </select>
+          </td>
+
+          <td>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <div style="font-size:11px;color:#6b7280;">${escapeHtml(cfg.label)}</div>
+
+              ${
+                it.type === "note"
+                  ? `<textarea data-dyn rows="2"
+                        placeholder="${escapeHtml(cfg.placeholder)}"
+                        style="width:260px;border:1px solid #e5e7eb;border-radius:8px;padding:6px 8px;font-size:12px;resize:vertical;">${escapeHtml(typeVal)}</textarea>`
+                  : `<input data-dyn value="${escapeHtml(typeVal)}"
+                        placeholder="${escapeHtml(cfg.placeholder)}"
+                        style="width:260px;border:1px solid #e5e7eb;border-radius:8px;padding:5px 7px;font-size:12px;" />`
+              }
+            </div>
+          </td>
+
+          <td>
+            <input data-min type="number" value="${Number(it.duration_minutes||0)}"
+              style="width:70px;border:1px solid #e5e7eb;border-radius:8px;padding:5px 7px;font-size:12px;" />
+          </td>
+
+          <td><input data-locked type="checkbox" ${it.is_locked ? "checked":""} /></td>
+          <td><input data-preview type="checkbox" ${it.is_preview ? "checked":""} /></td>
+
+          <td style="display:flex;gap:6px;align-items:center;">
+            <button class="btn-secondary" data-open>Open</button>
+            <button class="btn-secondary" data-del>Remove</button>
+          </td>
+        `;
+
+        const titleI = tr.querySelector("[data-title]");
+        const typeS  = tr.querySelector("[data-type]");
+        const dynEl  = tr.querySelector("[data-dyn]");
+        const minI   = tr.querySelector("[data-min]");
+        const lockC  = tr.querySelector("[data-locked]");
+        const prevC  = tr.querySelector("[data-preview]");
+        const delB   = tr.querySelector("[data-del]");
+        const openB  = tr.querySelector("[data-open]");
+
+        titleI.oninput = () => (it.title = titleI.value);
+
+        typeS.onchange = () => {
+          const currentValue = dynEl ? dynEl.value : "";
+          it.type = typeS.value;
+          setTypeValue(it, currentValue);
+          renderCourseContentUI(); // rerender for textarea/input + label
+        };
+
+        if (dynEl) dynEl.oninput = () => setTypeValue(it, dynEl.value);
+
+        minI.oninput = () => (it.duration_minutes = Number(minI.value || 0));
+        lockC.onchange = () => (it.is_locked = !!lockC.checked);
+        prevC.onchange = () => (it.is_preview = !!prevC.checked);
+
+        delB.onclick = () => {
+          if (!confirm("Remove lesson?")) return;
+          sec.items.splice(lIdx, 1);
+          renderCourseContentUI();
+        };
+
+        openB.onclick = () => {
+          const cfg2 = typeFieldConfig(it.type);
+          const v = String(it[cfg2.key] || "").trim();
+
+          if (it.type === "video" || it.type === "pdf" || it.type === "link") {
+            if (!isLikelyUrl(v)) return toast(`Invalid URL for ${cfg2.label}`, "error");
+            window.open(v, "_blank");
+            return;
+          }
+          if (it.type === "quiz") {
+            toast(`Quiz/Test ID: ${v || "(empty)"}`, "info");
+            return;
+          }
+          if (it.type === "note") {
+            toast(v ? "Note opened (see field)." : "Note empty", v ? "success" : "error");
+            return;
+          }
+        };
+
+        tbody.appendChild(tr);
+      });
+    }
+
+    ccSectionsContainer.appendChild(wrap);
+  });
+}
+
+/* JSON buttons */
+ccShowJsonBtn.onclick = () => {
+  const show = ccJsonOutput.style.display !== "block";
+  ccJsonOutput.style.display = show ? "block" : "none";
+  if (show) ccJsonOutput.value = JSON.stringify(currentCourseContent, null, 2);
+};
+
+ccCopyJsonBtn.onclick = async () => {
+  try {
+    await navigator.clipboard.writeText(JSON.stringify(currentCourseContent, null, 2));
+    toast("JSON copied ✅", "success");
+  } catch (e) {
+    toast("Copy failed: " + e, "error");
+  }
+};
+
+ccAddSectionBtn.onclick = () => {
+  currentCourseContent.sections ??= [];
+  currentCourseContent.sections.push({
+    id: String(Date.now() + Math.random()),
+    title: "",
+    description: "",
+    order: currentCourseContent.sections.length,
+    items: [],
+  });
+  renderCourseContentUI();
+};
+
+/* ======================================================
+   TEST QUESTIONS EDITOR (FULLY WORKING)
+   - add/remove
+   - validation
+   - save to DB (PUT /tests/:id/questions)
+   Note: your backend currently only has PUT /api/tests/:id/questions (good)
+   But you DO NOT have GET /api/tests/:id/questions
+   So we will load using GET /tests/:id (your backend has it) and read questions_json if present.
+   ====================================================== */
+
+function normalizeQuestionsFromTestRow(row) {
+  // If you later store questions_json column, read it
+  // fallback: empty array
+  try {
+    if (row && row.questions_json) {
+      const q = JSON.parse(row.questions_json);
+      if (Array.isArray(q)) return q;
+      // maybe {questions:[...]}
+      if (q && Array.isArray(q.questions)) return q.questions;
+    }
+  } catch (_) {}
+  return [];
+}
+
+function validateQuestions(list) {
+  const errs = [];
+  if (!list.length) errs.push("Add at least 1 question.");
+  list.forEach((q, i) => {
+    if (!String(q.question || "").trim()) errs.push(`Q${i + 1}: question text required`);
+    const opts = q.options || {};
+    const optArr = [opts.a, opts.b, opts.c, opts.d].map(x => String(x||"").trim());
+    if (optArr.some(x => !x)) errs.push(`Q${i + 1}: all options A/B/C/D required`);
+    if (!["a","b","c","d"].includes(String(q.answer||"").toLowerCase())) errs.push(`Q${i + 1}: answer must be a/b/c/d`);
+  });
+  return errs;
+}
+
+async function openTestContentEditor(testId) {
+  currentContentTestId = testId;
+  currentContentTest = tests.find((t) => t.id === testId) || { name: `Test #${testId}` };
+
+  // Load test row (GET /tests/:id)
+  const row = await api(`/tests/${testId}`);
+  currentTestQuestions = normalizeQuestionsFromTestRow(row);
+
+  tcTestTitleEl.textContent = currentContentTest.name || `Test #${testId}`;
+  testContentEditor.style.display = "block";
+  renderTestQuestionsUI();
+
+  testContentEditor.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+async function saveTestQuestions() {
+  if (!currentContentTestId) return;
+
+  const errs = validateQuestions(currentTestQuestions);
+  if (errs.length) {
+    toast("Fix these errors:\n\n• " + errs.join("\n• "), "error");
+    return;
+  }
+
+  // PUT /tests/:id/questions (backend expects body JSON; you currently stringify whole body)
+  await api(`/tests/${currentContentTestId}/questions`, {
+    method: "PUT",
+    body: JSON.stringify({ questions: currentTestQuestions }),
+  });
+  toast("Test questions saved ✅", "success");
+}
+
+function renderTestQuestionsUI() {
+  tcQuestionsContainer.innerHTML = "";
+
+  if (!currentTestQuestions.length) {
+    tcQuestionsContainer.innerHTML = `<div class="muted">No questions yet. Click “+ Add question”.</div>
+      <div style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn-primary" id="tcSaveBtn">Save questions</button>
+        <button class="btn-secondary" id="tcValidateBtn">Validate</button>
+      </div>`;
+    document.getElementById("tcSaveBtn").onclick = () => saveTestQuestions();
+    document.getElementById("tcValidateBtn").onclick = () => {
+      const errs = validateQuestions(currentTestQuestions);
+      if (!errs.length) toast("Validation OK ✅", "success");
+      else toast("Fix:\n\n• " + errs.join("\n• "), "error");
+    };
+    return;
+  }
+
+  currentTestQuestions.forEach((q, idx) => {
+    q.id ??= String(Date.now() + Math.random());
+    q.options ??= { a: "", b: "", c: "", d: "" };
+    q.answer ??= "a";
+
+    const card = document.createElement("div");
+    card.className = "cc-section-card";
+    card.innerHTML = `
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap;">
+        <div style="font-weight:700;">Q${idx + 1}</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn-secondary" data-open>Preview</button>
+          <button class="btn-secondary" data-del>Remove</button>
+        </div>
+      </div>
+
+      <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px;">
+        <textarea data-q rows="2" placeholder="Question text"
+          style="width:100%;border:1px solid #e5e7eb;border-radius:10px;padding:8px 10px;font-size:13px;resize:vertical;">${escapeHtml(q.question || "")}</textarea>
+
+        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;">
+          <input data-a placeholder="Option A" value="${escapeHtml(q.options.a || "")}"
+            style="border:1px solid #e5e7eb;border-radius:10px;padding:8px 10px;font-size:13px;" />
+          <input data-b placeholder="Option B" value="${escapeHtml(q.options.b || "")}"
+            style="border:1px solid #e5e7eb;border-radius:10px;padding:8px 10px;font-size:13px;" />
+          <input data-c placeholder="Option C" value="${escapeHtml(q.options.c || "")}"
+            style="border:1px solid #e5e7eb;border-radius:10px;padding:8px 10px;font-size:13px;" />
+          <input data-d placeholder="Option D" value="${escapeHtml(q.options.d || "")}"
+            style="border:1px solid #e5e7eb;border-radius:10px;padding:8px 10px;font-size:13px;" />
+        </div>
+
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+          <div style="font-size:12px;color:#6b7280;">Correct answer:</div>
+          <select data-ans style="border:1px solid #e5e7eb;border-radius:10px;padding:8px 10px;font-size:13px;">
+            ${["a","b","c","d"].map(a=>`<option value="${a}" ${String(q.answer).toLowerCase()===a?"selected":""}>${a.toUpperCase()}</option>`).join("")}
+          </select>
+        </div>
+      </div>
+    `;
+
+    card.querySelector("[data-q]").oninput = (e) => (q.question = e.target.value);
+    card.querySelector("[data-a]").oninput = (e) => (q.options.a = e.target.value);
+    card.querySelector("[data-b]").oninput = (e) => (q.options.b = e.target.value);
+    card.querySelector("[data-c]").oninput = (e) => (q.options.c = e.target.value);
+    card.querySelector("[data-d]").oninput = (e) => (q.options.d = e.target.value);
+    card.querySelector("[data-ans]").onchange = (e) => (q.answer = e.target.value);
+
+    card.querySelector("[data-del]").onclick = () => {
+      if (!confirm("Remove question?")) return;
+      currentTestQuestions.splice(idx, 1);
+      renderTestQuestionsUI();
+    };
+
+    card.querySelector("[data-open]").onclick = () => {
+      toast(
+        `Q${idx + 1}\n\n${q.question || ""}\n\nA) ${q.options.a || ""}\nB) ${q.options.b || ""}\nC) ${q.options.c || ""}\nD) ${q.options.d || ""}\n\nAnswer: ${(q.answer||"a").toUpperCase()}`,
+        "info"
+      );
+    };
+
+    tcQuestionsContainer.appendChild(card);
+  });
+
+  // Save + Validate buttons
+  const actions = document.createElement("div");
+  actions.style.marginTop = "10px";
+  actions.style.display = "flex";
+  actions.style.gap = "10px";
+  actions.style.flexWrap = "wrap";
+  actions.innerHTML = `
+    <button class="btn-primary" id="tcSaveBtn2">Save questions</button>
+    <button class="btn-secondary" id="tcValidateBtn2">Validate</button>
+  `;
+  tcQuestionsContainer.appendChild(actions);
+
+  document.getElementById("tcSaveBtn2").onclick = () => saveTestQuestions();
+  document.getElementById("tcValidateBtn2").onclick = () => {
+    const errs = validateQuestions(currentTestQuestions);
+    if (!errs.length) toast("Validation OK ✅", "success");
+    else toast("Fix:\n\n• " + errs.join("\n• "), "error");
+  };
+}
+
+tcAddQuestionBtn.onclick = () => {
+  currentTestQuestions.push({
+    id: String(Date.now() + Math.random()),
+    question: "",
+    options: { a: "", b: "", c: "", d: "" },
+    answer: "a",
+  });
+  renderTestQuestionsUI();
+};
+
+/* ========= BOOTSTRAP ========= */
+async function bootstrapLoad() {
+  try {
+    await renderCourses();
+    await renderTests();
+    await renderUpdates();
+  } catch (e) {
+    console.error(e);
+    toast("Bootstrap failed:\n" + e.message, "error");
+  }
+}
 </script>
 </body>
 </html>
