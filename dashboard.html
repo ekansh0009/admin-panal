@@ -11,12 +11,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       background: #f3f4f6;
@@ -24,8 +19,6 @@
       min-height: 100vh;
       display: flex;
     }
-
-    /* Sidebar */
     .sidebar {
       width: 240px;
       background: #0f172a;
@@ -34,537 +27,163 @@
       display: flex;
       flex-direction: column;
     }
-
-    .sidebar-header {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 24px;
-    }
-
+    .sidebar-header { display: flex; align-items: center; gap: 10px; margin-bottom: 24px; }
     .logo-circle {
-      width: 34px;
-      height: 34px;
-      border-radius: 999px;
-      background: #4c6fff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 800;
-      font-size: 18px;
+      width: 34px; height: 34px; border-radius: 999px;
+      background: #4c6fff; display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 18px;
     }
-
-    .sidebar-title {
-      font-weight: 700;
-      font-size: 18px;
-    }
-
-    .sidebar-sub {
-      font-size: 11px;
-      color: #9ca3af;
-    }
-
-    .nav {
-      list-style: none;
-      margin-top: 12px;
-    }
-
-    .nav-item {
-      margin-bottom: 4px;
-    }
-
+    .sidebar-title { font-weight: 700; font-size: 18px; }
+    .sidebar-sub { font-size: 11px; color: #9ca3af; }
+    .nav { list-style: none; margin-top: 12px; }
+    .nav-item { margin-bottom: 4px; }
     .nav-link {
-      width: 100%;
-      border-radius: 10px;
-      padding: 8px 10px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      cursor: pointer;
-      font-size: 14px;
-      color: #e5e7eb;
-      border: none;
-      background: transparent;
-      text-align: left;
+      width: 100%; border-radius: 10px; padding: 8px 10px;
+      display: flex; align-items: center; gap: 10px;
+      cursor: pointer; font-size: 14px; color: #e5e7eb;
+      border: none; background: transparent; text-align: left;
       transition: background 0.15s ease, color 0.15s ease;
     }
+    .nav-link span.icon { font-size: 16px; width: 18px; text-align: center; }
+    .nav-link.active, .nav-link:hover { background: #111827; color: #ffffff; }
+    .sidebar-footer { margin-top: auto; font-size: 12px; color: #6b7280; }
 
-    .nav-link span.icon {
-      font-size: 16px;
-      width: 18px;
-      text-align: center;
-    }
-
-    .nav-link.active,
-    .nav-link:hover {
-      background: #111827;
-      color: #ffffff;
-    }
-
-    .sidebar-footer {
-      margin-top: auto;
-      font-size: 12px;
-      color: #6b7280;
-    }
-
-    /* Main content */
-    .main {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      min-width: 0;
-    }
-
+    .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
     .topbar {
-      height: 56px;
-      background: #ffffff;
-      border-bottom: 1px solid #e5e7eb;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 20px;
+      height: 56px; background: #ffffff; border-bottom: 1px solid #e5e7eb;
+      display: flex; align-items: center; justify-content: space-between; padding: 0 20px;
     }
-
-    .topbar-title {
-      font-weight: 600;
-      font-size: 16px;
-    }
-
-    .topbar-right {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      font-size: 13px;
-      color: #6b7280;
-    }
-
+    .topbar-title { font-weight: 600; font-size: 16px; }
+    .topbar-right { display: flex; align-items: center; gap: 12px; font-size: 13px; color: #6b7280; }
     .avatar {
-      width: 32px;
-      height: 32px;
-      border-radius: 999px;
-      background: #4c6fff;
-      color: #fff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 14px;
-      font-weight: 600;
+      width: 32px; height: 32px; border-radius: 999px; background: #4c6fff; color: #fff;
+      display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600;
     }
-
     .logout-btn {
-      border-radius: 8px;
-      border: 1px solid #e5e7eb;
-      padding: 6px 10px;
-      background: #ffffff;
-      color: #374151;
-      font-size: 12px;
-      cursor: pointer;
+      border-radius: 8px; border: 1px solid #e5e7eb; padding: 6px 10px;
+      background: #ffffff; color: #374151; font-size: 12px; cursor: pointer;
     }
 
-    .content {
-      padding: 18px 20px 24px;
-      min-height: calc(100vh - 56px);
-    }
-
-    .section {
-      display: none;
-    }
-
-    .section.active {
-      display: block;
-    }
-
+    .content { padding: 18px 20px 24px; min-height: calc(100vh - 56px); }
+    .section { display: none; }
+    .section.active { display: block; }
     .section-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 16px;
-      gap: 10px;
-      flex-wrap: wrap;
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px; gap: 10px; flex-wrap: wrap;
     }
-
-    .section-title {
-      font-size: 20px;
-      font-weight: 700;
-    }
-
+    .section-title { font-size: 20px; font-weight: 700; }
     .btn-primary {
-      border-radius: 10px;
-      border: none;
-      padding: 8px 14px;
-      background: #4c6fff;
-      color: #ffffff;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
+      border-radius: 10px; border: none; padding: 8px 14px; background: #4c6fff; color: #ffffff;
+      font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
     }
-
     .btn-secondary {
-      border-radius: 8px;
-      border: 1px solid #e5e7eb;
-      padding: 6px 10px;
-      background: #ffffff;
-      color: #374151;
-      font-size: 12px;
-      cursor: pointer;
+      border-radius: 8px; border: 1px solid #e5e7eb; padding: 6px 10px; background: #ffffff;
+      color: #374151; font-size: 12px; cursor: pointer;
     }
 
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 14px;
-      margin-bottom: 18px;
-    }
+    .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-bottom: 18px; }
+    .card { background: #ffffff; border-radius: 14px; padding: 14px; border: 1px solid #e5e7eb; }
+    .card-title { font-size: 13px; color: #6b7280; margin-bottom: 4px; }
+    .card-value { font-size: 18px; font-weight: 700; }
+    .card-sub { font-size: 11px; color: #9ca3af; margin-top: 4px; }
 
-    .card {
-      background: #ffffff;
-      border-radius: 14px;
-      padding: 14px;
-      border: 1px solid #e5e7eb;
-    }
-
-    .card-title {
-      font-size: 13px;
-      color: #6b7280;
-      margin-bottom: 4px;
-    }
-
-    .card-value {
-      font-size: 18px;
-      font-weight: 700;
-    }
-
-    .card-sub {
-      font-size: 11px;
-      color: #9ca3af;
-      margin-top: 4px;
-    }
-
-    /* Section toolbar (search + filters) */
-    .section-toolbar {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      align-items: center;
-      margin-bottom: 10px;
-    }
-
-    .toolbar-group {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      align-items: center;
-    }
-
+    .section-toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
+    .toolbar-group { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
     .toolbar-input {
-      border-radius: 999px;
-      border: 1px solid #e5e7eb;
-      padding: 7px 10px;
-      font-size: 13px;
-      background: #ffffff;
-      min-width: 160px;
+      border-radius: 999px; border: 1px solid #e5e7eb; padding: 7px 10px;
+      font-size: 13px; background: #ffffff; min-width: 160px;
     }
+    .toolbar-input::placeholder { color: #9ca3af; }
 
-    .toolbar-input::placeholder {
-      color: #9ca3af;
-    }
-
-    /* Table */
     table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
-      background: #ffffff;
-      border-radius: 14px;
-      overflow: hidden;
-      border: 1px solid #e5e7eb;
+      width: 100%; border-collapse: collapse; font-size: 13px; background: #ffffff;
+      border-radius: 14px; overflow: hidden; border: 1px solid #e5e7eb;
     }
+    thead { background: #f9fafb; }
+    th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #e5e7eb; }
+    th { font-size: 12px; font-weight: 600; color: #6b7280; }
+    tr:last-child td { border-bottom: none; }
+    tbody tr:hover { background: #f9fafb; }
 
-    thead {
-      background: #f9fafb;
-    }
+    .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+    .badge-free { background: #e0f2fe; color: #0369a1; }
+    .badge-paid { background: #fef3c7; color: #b45309; }
+    .badge-status { background: #ecfdf5; color: #15803d; }
 
-    th,
-    td {
-      padding: 10px 12px;
-      text-align: left;
-      border-bottom: 1px solid #e5e7eb;
-    }
-
-    th {
-      font-size: 12px;
-      font-weight: 600;
-      color: #6b7280;
-    }
-
-    tr:last-child td {
-      border-bottom: none;
-    }
-
-    tbody tr:hover {
-      background: #f9fafb;
-    }
-
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      padding: 2px 8px;
-      border-radius: 999px;
-      font-size: 11px;
-      font-weight: 600;
-    }
-
-    .badge-free {
-      background: #e0f2fe;
-      color: #0369a1;
-    }
-
-    .badge-paid {
-      background: #fef3c7;
-      color: #b45309;
-    }
-
-    .badge-status {
-      background: #ecfdf5;
-      color: #15803d;
-    }
-
-    .muted {
-      font-size: 12px;
-      color: #9ca3af;
-      margin-top: 8px;
-    }
+    .muted { font-size: 12px; color: #9ca3af; margin-top: 8px; }
 
     .inline-form {
-      margin-top: 14px;
-      background: #ffffff;
-      border-radius: 14px;
-      border: 1px solid #e5e7eb;
-      padding: 12px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      align-items: center;
+      margin-top: 14px; background: #ffffff; border-radius: 14px; border: 1px solid #e5e7eb;
+      padding: 12px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+    }
+    .inline-input { flex: 1 1 180px; min-width: 0; }
+    .inline-input input, .inline-input select, .inline-input textarea {
+      width: 100%; border-radius: 8px; border: 1px solid #e5e7eb; padding: 7px 9px; font-size: 13px; resize: vertical;
     }
 
-    .inline-input {
-      flex: 1 1 180px;
-      min-width: 0;
-    }
-
-    .inline-input input,
-    .inline-input select,
-    .inline-input textarea {
-      width: 100%;
-      border-radius: 8px;
-      border: 1px solid #e5e7eb;
-      padding: 7px 9px;
-      font-size: 13px;
-      resize: vertical;
-    }
-
-    /* Loading overlay */
     #overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(243, 244, 246, 0.9);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 50;
-      font-size: 14px;
-      color: #6b7280;
+      position: fixed; inset: 0; background: rgba(243, 244, 246, 0.9);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 50; font-size: 14px; color: #6b7280;
     }
 
-    /* ===== COURSE CONTENT EDITOR ===== */
-
-    #courseContentEditor {
-      margin-top: 16px;
-    }
-
-    .cc-editor-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      margin-bottom: 10px;
-      flex-wrap: wrap;
-    }
-
-    .cc-editor-subtitle {
-      font-size: 12px;
-      color: #6b7280;
-    }
-
-    .cc-sections-container {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      margin-top: 4px;
-    }
-
-    .cc-section-card {
-      border-radius: 12px;
-      border: 1px solid #e5e7eb;
-      padding: 10px 12px;
-      background: #f9fafb;
-    }
-
-    .cc-section-header {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 8px;
-      margin-bottom: 6px;
-    }
-
-    .cc-section-title {
-      font-size: 14px;
-      font-weight: 600;
-    }
-
-    .cc-section-desc {
-      font-size: 12px;
-      color: #6b7280;
-      margin-top: 2px;
-    }
-
-    .cc-section-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-    }
-
-    .cc-lessons-wrapper {
-      margin-top: 6px;
-    }
+    #courseContentEditor { margin-top: 16px; }
+    .cc-editor-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+    .cc-editor-subtitle { font-size: 12px; color: #6b7280; }
+    .cc-sections-container { display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }
+    .cc-section-card { border-radius: 12px; border: 1px solid #e5e7eb; padding: 10px 12px; background: #f9fafb; }
+    .cc-section-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+    .cc-section-title { font-size: 14px; font-weight: 600; }
+    .cc-section-desc { font-size: 12px; color: #6b7280; margin-top: 2px; }
+    .cc-section-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+    .cc-lessons-wrapper { margin-top: 6px; }
 
     .cc-lessons-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 12px;
-      background: #ffffff;
-      border-radius: 10px;
-      overflow: hidden;
-      border: 1px solid #e5e7eb;
+      width: 100%; border-collapse: collapse; font-size: 12px; background: #ffffff;
+      border-radius: 10px; overflow: hidden; border: 1px solid #e5e7eb;
     }
-
-    .cc-lessons-table th,
-    .cc-lessons-table td {
-      padding: 6px 8px;
-      border-bottom: 1px solid #e5e7eb;
-    }
-
-    .cc-lessons-table th {
-      background: #f3f4f6;
-      font-weight: 600;
-      color: #6b7280;
-    }
-
-    .cc-lessons-table tr:last-child td {
-      border-bottom: none;
-    }
+    .cc-lessons-table th, .cc-lessons-table td { padding: 6px 8px; border-bottom: 1px solid #e5e7eb; }
+    .cc-lessons-table th { background: #f3f4f6; font-weight: 600; color: #6b7280; }
+    .cc-lessons-table tr:last-child td { border-bottom: none; }
 
     .cc-tag-lock {
-      display: inline-flex;
-      align-items: center;
-      padding: 2px 6px;
-      border-radius: 999px;
-      font-size: 10px;
-      background: #fee2e2;
-      color: #b91c1c;
+      display: inline-flex; align-items: center; padding: 2px 6px;
+      border-radius: 999px; font-size: 10px; background: #fee2e2; color: #b91c1c;
     }
-
     .cc-tag-unlock {
-      display: inline-flex;
-      align-items: center;
-      padding: 2px 6px;
-      border-radius: 999px;
-      font-size: 10px;
-      background: #dcfce7;
-      color: #15803d;
+      display: inline-flex; align-items: center; padding: 2px 6px;
+      border-radius: 999px; font-size: 10px; background: #dcfce7; color: #15803d;
     }
 
-    /* JSON toolbar for Course Content */
-    .cc-json-toolbar {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      align-items: center;
-      margin-bottom: 8px;
-    }
-
+    .cc-json-toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 8px; }
     .cc-json-output {
-      margin-top: 4px;
-      width: 100%;
-      min-height: 140px;
-      max-height: 260px;
-      border-radius: 10px;
-      border: 1px solid #e5e7eb;
-      padding: 8px 10px;
+      margin-top: 4px; width: 100%; min-height: 140px; max-height: 260px;
+      border-radius: 10px; border: 1px solid #e5e7eb; padding: 8px 10px;
       font-size: 12px;
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      background: #f9fafb;
-      resize: vertical;
-      white-space: pre;
-      overflow: auto;
+      background: #f9fafb; resize: vertical; white-space: pre; overflow: auto;
     }
 
     @media (max-width: 900px) {
-      .sidebar {
-        display: none;
-      }
-
-      body {
-        flex-direction: column;
-      }
-
-      .main {
-        width: 100%;
-      }
-
-      .grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
+      .sidebar { display: none; }
+      body { flex-direction: column; }
+      .main { width: 100%; }
+      .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
-
     @media (max-width: 640px) {
-      .grid {
-        grid-template-columns: 1fr;
-      }
-
-      .inline-form {
-        flex-direction: column;
-        align-items: stretch;
-      }
-
-      .section-toolbar {
-        flex-direction: column;
-        align-items: stretch;
-      }
-
-      .toolbar-input {
-        width: 100%;
-      }
-
-      .cc-section-header {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-
-      .cc-section-actions {
-        width: 100%;
-      }
+      .grid { grid-template-columns: 1fr; }
+      .inline-form { flex-direction: column; align-items: stretch; }
+      .section-toolbar { flex-direction: column; align-items: stretch; }
+      .toolbar-input { width: 100%; }
+      .cc-section-header { flex-direction: column; align-items: flex-start; }
+      .cc-section-actions { width: 100%; }
     }
   </style>
 </head>
+
 <body>
   <div id="overlay">Checking admin access…</div>
 
-  <!-- SIDEBAR -->
   <aside class="sidebar">
     <div class="sidebar-header">
       <div class="logo-circle">P</div>
@@ -575,40 +194,19 @@
     </div>
 
     <ul class="nav">
-      <li class="nav-item">
-        <button class="nav-link active" data-section="overview">
-          <span class="icon">🏠</span> Dashboard
-        </button>
-      </li>
-      <li class="nav-item">
-        <button class="nav-link" data-section="courses">
-          <span class="icon">📚</span> Courses
-        </button>
-      </li>
-      <li class="nav-item">
-        <button class="nav-link" data-section="tests">
-          <span class="icon">📝</span> Tests
-        </button>
-      </li>
-      <li class="nav-item">
-        <button class="nav-link" data-section="updates">
-          <span class="icon">📢</span> Updates
-        </button>
-      </li>
-      <li class="nav-item">
-        <button class="nav-link" data-section="settings">
-          <span class="icon">⚙️</span> Settings
-        </button>
-      </li>
+      <li class="nav-item"><button class="nav-link active" data-section="overview"><span class="icon">🏠</span> Dashboard</button></li>
+      <li class="nav-item"><button class="nav-link" data-section="courses"><span class="icon">📚</span> Courses</button></li>
+      <li class="nav-item"><button class="nav-link" data-section="tests"><span class="icon">📝</span> Tests</button></li>
+      <li class="nav-item"><button class="nav-link" data-section="updates"><span class="icon">📢</span> Updates</button></li>
+      <li class="nav-item"><button class="nav-link" data-section="settings"><span class="icon">⚙️</span> Settings</button></li>
     </ul>
 
     <div class="sidebar-footer">
       © PAPI • v0.3<br />
-      (Frontend complete, backend next)
+      (Connected to local backend)
     </div>
   </aside>
 
-  <!-- MAIN AREA -->
   <div class="main">
     <header class="topbar">
       <div class="topbar-title">PAPI Admin Panel</div>
@@ -620,51 +218,26 @@
     </header>
 
     <main class="content">
-      <!-- Overview -->
       <section class="section active" id="section-overview">
-        <div class="section-header">
-          <h2 class="section-title">Overview</h2>
-        </div>
-
+        <div class="section-header"><h2 class="section-title">Overview</h2></div>
         <div class="grid">
-          <div class="card">
-            <div class="card-title">Total Courses</div>
-            <div class="card-value" id="stat-courses">0</div>
-            <div class="card-sub">Free + paid</div>
-          </div>
-          <div class="card">
-            <div class="card-title">Total Tests</div>
-            <div class="card-value" id="stat-tests">0</div>
-            <div class="card-sub">Active test series</div>
-          </div>
-          <div class="card">
-            <div class="card-title">Total Updates</div>
-            <div class="card-value" id="stat-updates">0</div>
-            <div class="card-sub">Announcements</div>
-          </div>
+          <div class="card"><div class="card-title">Total Courses</div><div class="card-value" id="stat-courses">0</div><div class="card-sub">Free + paid</div></div>
+          <div class="card"><div class="card-title">Total Tests</div><div class="card-value" id="stat-tests">0</div><div class="card-sub">Active test series</div></div>
+          <div class="card"><div class="card-title">Total Updates</div><div class="card-value" id="stat-updates">0</div><div class="card-sub">Announcements</div></div>
         </div>
-
-        <p class="muted">
-          Abhi stats frontend arrays se aa rahe hain. Backend connect karte hi ye live data ho jayega.
-        </p>
+        <p class="muted">Now stats are coming from backend DB (SQLite). Refresh will keep the data.</p>
       </section>
 
-      <!-- Courses -->
+      <!-- COURSES -->
       <section class="section" id="section-courses">
         <div class="section-header">
           <h2 class="section-title">Courses</h2>
           <button class="btn-primary" id="addCourseScrollBtn">+ Add new course</button>
         </div>
 
-        <!-- Courses search + filter -->
         <div class="section-toolbar">
           <div class="toolbar-group">
-            <input
-              type="text"
-              id="courseSearch"
-              class="toolbar-input"
-              placeholder="Search courses..."
-            />
+            <input type="text" id="courseSearch" class="toolbar-input" placeholder="Search courses..." />
             <select id="courseFilterType" class="toolbar-input">
               <option value="all">All types</option>
               <option value="free">Free</option>
@@ -684,49 +257,34 @@
               <th style="width: 200px;">Actions</th>
             </tr>
           </thead>
-          <tbody>
-          </tbody>
+          <tbody></tbody>
         </table>
 
-        <!-- Inline add / edit form -->
         <form class="inline-form" id="courseForm">
-          <div class="inline-input">
-            <input type="text" id="courseTitle" placeholder="Course title" required />
-          </div>
-          <div class="inline-input">
-            <input type="text" id="courseLevel" placeholder="Level (e.g. Class 11 / JEE)" />
-          </div>
+          <div class="inline-input"><input type="text" id="courseTitle" placeholder="Course title" required /></div>
+          <div class="inline-input"><input type="text" id="courseLevel" placeholder="Level (e.g. Class 11 / JEE)" /></div>
           <div class="inline-input">
             <select id="courseType">
               <option value="free">Free</option>
               <option value="paid">Paid</option>
             </select>
           </div>
-          <div class="inline-input">
-            <input type="number" id="coursePrice" placeholder="Price (₹)" min="0" />
-          </div>
-          <div class="inline-input">
-            <input type="text" id="courseSubtitle" placeholder="Subtitle (short tagline)" />
-          </div>
+          <div class="inline-input"><input type="number" id="coursePrice" placeholder="Price (₹)" min="0" /></div>
+          <div class="inline-input"><input type="text" id="courseSubtitle" placeholder="Subtitle (short tagline)" /></div>
           <button type="submit" class="btn-primary" id="courseSubmitBtn">Save course</button>
-          <button type="button" class="btn-secondary" id="courseCancelEditBtn" style="display:none;">
-            Cancel edit
-          </button>
+          <button type="button" class="btn-secondary" id="courseCancelEditBtn" style="display:none;">Cancel edit</button>
         </form>
 
-        <!-- NEW: Course Content Editor -->
+        <!-- Course Content Editor (local only for now) -->
         <div class="card" id="courseContentEditor" style="display:none;">
           <div class="cc-editor-header">
             <div>
               <div class="card-title">Course content</div>
-              <div class="cc-editor-subtitle">
-                Manage sections & lessons for: <strong id="ccCourseTitle"></strong>
-              </div>
+              <div class="cc-editor-subtitle">Manage sections & lessons for: <strong id="ccCourseTitle"></strong></div>
             </div>
             <button class="btn-primary" id="ccAddSectionBtn">+ Add section</button>
           </div>
 
-          <!-- JSON toolbar -->
           <div class="cc-json-toolbar">
             <button class="btn-secondary" id="ccShowJsonBtn">Show JSON</button>
             <button class="btn-secondary" id="ccCopyJsonBtn">Copy JSON</button>
@@ -735,32 +293,23 @@
 
           <div class="cc-sections-container" id="ccSectionsContainer"></div>
           <p class="muted">
-            Ye structure app ke <code>CourseSection</code> / <code>CourseLesson</code> ke jaisa hai.
-            Backend banate time isi ko JSON me save/load karna hai.
+            Note: content editor is local for now. Backend endpoints will be added later to save this JSON.
           </p>
         </div>
 
-        <p class="muted">
-          Course add/edit/delete abhi frontend pe hi ho raha hai. Baad me yahi data Firestore/DB me save karenge.
-        </p>
+        <p class="muted">Courses are now saved in SQLite via API.</p>
       </section>
 
-            <!-- Tests -->
+      <!-- TESTS -->
       <section class="section" id="section-tests">
         <div class="section-header">
           <h2 class="section-title">Tests</h2>
           <button class="btn-primary" id="addTestScrollBtn">+ Add new test</button>
         </div>
 
-        <!-- Tests search + filter -->
         <div class="section-toolbar">
           <div class="toolbar-group">
-            <input
-              type="text"
-              id="testSearch"
-              class="toolbar-input"
-              placeholder="Search tests..."
-            />
+            <input type="text" id="testSearch" class="toolbar-input" placeholder="Search tests..." />
             <select id="testFilterStatus" class="toolbar-input">
               <option value="all">All types</option>
               <option value="free">Free</option>
@@ -781,23 +330,14 @@
               <th style="width: 200px;">Actions</th>
             </tr>
           </thead>
-          <tbody>
-          </tbody>
+          <tbody></tbody>
         </table>
 
         <form class="inline-form" id="testForm">
-          <div class="inline-input">
-            <input type="text" id="testName" placeholder="Test title" required />
-          </div>
-          <div class="inline-input">
-            <input type="text" id="testCourse" placeholder="Belongs to course" />
-          </div>
-          <div class="inline-input">
-            <input type="number" id="testQuestions" placeholder="Questions" min="1" />
-          </div>
-          <div class="inline-input">
-            <input type="text" id="testDuration" placeholder="Duration (e.g. 60 min)" />
-          </div>
+          <div class="inline-input"><input type="text" id="testName" placeholder="Test title" required /></div>
+          <div class="inline-input"><input type="text" id="testCourse" placeholder="Belongs to course" /></div>
+          <div class="inline-input"><input type="number" id="testQuestions" placeholder="Questions" min="1" /></div>
+          <div class="inline-input"><input type="text" id="testDuration" placeholder="Duration (e.g. 60 min)" /></div>
           <div class="inline-input">
             <select id="testStatus">
               <option value="free">Free</option>
@@ -805,53 +345,35 @@
             </select>
           </div>
           <button type="submit" class="btn-primary" id="testSubmitBtn">Save test</button>
-          <button type="button" class="btn-secondary" id="testCancelEditBtn" style="display:none;">
-            Cancel edit
-          </button>
+          <button type="button" class="btn-secondary" id="testCancelEditBtn" style="display:none;">Cancel edit</button>
         </form>
 
-        <!-- NEW: Test Content Editor -->
+        <!-- Test content editor (local only) -->
         <div class="card" id="testContentEditor" style="display:none; margin-top:16px;">
           <div class="cc-editor-header">
             <div>
               <div class="card-title">Test content</div>
-              <div class="cc-editor-subtitle">
-                Manage questions for: <strong id="tcTestTitle"></strong>
-              </div>
+              <div class="cc-editor-subtitle">Manage questions for: <strong id="tcTestTitle"></strong></div>
             </div>
             <button class="btn-primary" id="tcAddQuestionBtn">+ Add question</button>
           </div>
-
           <div class="cc-sections-container" id="tcQuestionsContainer"></div>
-
-          <p class="muted">
-            Yaha se har test ke liye MCQ questions banao (question, options, correct answer, marks).
-            Backend banate time isi structure ko JSON me Firestore/DB me save kar sakte ho.
-          </p>
+          <p class="muted">Note: questions editor is local for now. Backend endpoints will be added later.</p>
         </div>
 
-        <p class="muted">
-          Yaha se tum mock tests/series manage kar paoge. Abhi ke liye ye data browser me hi stored hai.
-        </p>
+        <p class="muted">Tests are now saved in SQLite via API.</p>
       </section>
 
-
-      <!-- Updates -->
+      <!-- UPDATES -->
       <section class="section" id="section-updates">
         <div class="section-header">
           <h2 class="section-title">Updates</h2>
           <button class="btn-primary" id="addUpdateScrollBtn">+ Add new update</button>
         </div>
 
-        <!-- Updates search -->
         <div class="section-toolbar">
           <div class="toolbar-group">
-            <input
-              type="text"
-              id="updateSearch"
-              class="toolbar-input"
-              placeholder="Search updates..."
-            />
+            <input type="text" id="updateSearch" class="toolbar-input" placeholder="Search updates..." />
           </div>
         </div>
 
@@ -865,48 +387,35 @@
               <th style="width: 120px;">Actions</th>
             </tr>
           </thead>
-          <tbody>
-          </tbody>
+          <tbody></tbody>
         </table>
 
         <form class="inline-form" id="updateForm">
-          <div class="inline-input">
-            <input type="text" id="updateTitle" placeholder="Update title" required />
-          </div>
-          <div class="inline-input">
-            <input type="text" id="updateAudience" placeholder="Visible to (e.g. All / JEE / NEET)" />
-          </div>
-          <div class="inline-input">
-            <textarea id="updateBody" rows="2" placeholder="Short description"></textarea>
-          </div>
+          <div class="inline-input"><input type="text" id="updateTitle" placeholder="Update title" required /></div>
+          <div class="inline-input"><input type="text" id="updateAudience" placeholder="Visible to (e.g. All / JEE / NEET)" /></div>
+          <div class="inline-input"><textarea id="updateBody" rows="2" placeholder="Short description"></textarea></div>
           <button type="submit" class="btn-primary" id="updateSubmitBtn">Save update</button>
-          <button type="button" class="btn-secondary" id="updateCancelEditBtn" style="display:none;">
-            Cancel edit
-          </button>
+          <button type="button" class="btn-secondary" id="updateCancelEditBtn" style="display:none;">Cancel edit</button>
         </form>
 
-        <p class="muted">
-          Ye updates PAPI app ke "Updates" tab me jaayenge. Backend connect karke API bana denge.
-        </p>
+        <p class="muted">Updates are now saved in SQLite via API.</p>
       </section>
 
-      <!-- Settings -->
       <section class="section" id="section-settings">
-        <div class="section-header">
-          <h2 class="section-title">Settings</h2>
-        </div>
+        <div class="section-header"><h2 class="section-title">Settings</h2></div>
         <div class="card">
           <div class="card-title">Admin Settings (placeholder)</div>
-          <p class="muted">
-            Yahan baad me admin logins, app config, ads settings, etc. rakhenge.
-          </p>
+          <p class="muted">Future: admin users, app config, ads config, etc.</p>
         </div>
       </section>
     </main>
   </div>
 
   <script>
-    // 🔐 Firebase config (same as index.html)
+    // ✅ Local backend
+    const API_BASE = "http://localhost:8080/api";
+
+    // 🔐 Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyBnDo5VJiM2noDWRWk281aVaUfPZ-sX08A",
       authDomain: "papi0009.firebaseapp.com",
@@ -919,9 +428,7 @@
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
 
-    const ALLOWED_ADMINS = [
-      "admin@papi.in" // apna admin email
-    ];
+    const ALLOWED_ADMINS = ["admin@papi.in"];
 
     const overlay = document.getElementById('overlay');
     const adminEmailSpan = document.getElementById('adminEmail');
@@ -936,6 +443,8 @@
         adminEmailSpan.textContent = user.email;
         avatarInitial.textContent = user.email.charAt(0).toUpperCase();
         overlay.style.display = 'none';
+        // After auth ok, load data from backend
+        bootstrapLoad();
       }
     });
 
@@ -944,61 +453,10 @@
       window.location.href = 'index.html';
     });
 
-    // ===== FRONTEND STATE (dummy data for now) =====
-    let courses = [
-      {
-        id: 1,
-        title: "Physics Crash Course",
-        level: "Class 11",
-        type: "free",
-        price: 0,
-        subtitle: "Mechanics fast revision"
-      },
-      {
-        id: 2,
-        title: "Complete Maths Booster",
-        level: "Class 12",
-        type: "paid",
-        price: 999,
-        subtitle: "Boards + JEE focused"
-      }
-    ];
-
-    let tests = [
-      {
-        id: 1,
-        name: "JEE Mock Test 01",
-        course: "Physics Crash Course",
-        questions: 25,
-        duration: "60 min",
-        status: "free"
-      },
-      {
-        id: 2,
-        name: "NEET Practice Set",
-        course: "Complete Biology",
-        questions: 50,
-        duration: "90 min",
-        status: "premium"
-      }
-    ];
-
-    let updates = [
-      {
-        id: 1,
-        title: "New Chemistry batch starting next week",
-        audience: "All students",
-        body: "Seats limited, enroll soon.",
-        createdAt: "Today"
-      },
-      {
-        id: 2,
-        title: "Free JEE mock tests added",
-        audience: "JEE students",
-        body: "Check the Tests tab in the app.",
-        createdAt: "Yesterday"
-      }
-    ];
+    // ===== BACKEND STATE =====
+    let courses = [];
+    let tests = [];
+    let updates = [];
 
     // ===== NAVIGATION =====
     const navLinks = document.querySelectorAll('.nav-link');
@@ -1007,21 +465,17 @@
     navLinks.forEach((link) => {
       link.addEventListener('click', () => {
         const target = link.getAttribute('data-section');
-
         navLinks.forEach((l) => l.classList.remove('active'));
         link.classList.add('active');
 
         sections.forEach((sec) => {
-          if (sec.id === 'section-' + target) {
-            sec.classList.add('active');
-          } else {
-            sec.classList.remove('active');
-          }
+          if (sec.id === 'section-' + target) sec.classList.add('active');
+          else sec.classList.remove('active');
         });
       });
     });
 
-    // ===== COURSES FRONTEND LOGIC =====
+    // ===== COURSES =====
     const coursesTableBody = document.querySelector('#coursesTable tbody');
     const courseForm = document.getElementById('courseForm');
     const statCourses = document.getElementById('stat-courses');
@@ -1033,13 +487,18 @@
     const courseSubmitBtn = document.getElementById('courseSubmitBtn');
     const courseCancelEditBtn = document.getElementById('courseCancelEditBtn');
     const addCourseScrollBtn = document.getElementById('addCourseScrollBtn');
-
     const courseSearchInput = document.getElementById('courseSearch');
     const courseFilterTypeSelect = document.getElementById('courseFilterType');
 
     let editingCourseId = null;
     let courseSearchTerm = '';
     let courseFilterType = 'all';
+
+    async function fetchCourses() {
+      const res = await fetch(`${API_BASE}/courses`);
+      if (!res.ok) throw new Error("Failed to load courses");
+      courses = await res.json();
+    }
 
     function renderCourses() {
       coursesTableBody.innerHTML = '';
@@ -1048,22 +507,18 @@
         const term = courseSearchTerm;
         const matchesSearch =
           !term ||
-          course.title.toLowerCase().includes(term) ||
+          (course.title && course.title.toLowerCase().includes(term)) ||
           (course.subtitle && course.subtitle.toLowerCase().includes(term));
 
-        const matchesType =
-          courseFilterType === 'all' || course.type === courseFilterType;
-
+        const matchesType = courseFilterType === 'all' || course.type === courseFilterType;
         return matchesSearch && matchesType;
       });
 
       if (filtered.length === 0) {
         const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td colspan="6" style="text-align:center;color:#9ca3af;font-size:12px;padding:16px;">
+        tr.innerHTML = `<td colspan="6" style="text-align:center;color:#9ca3af;font-size:12px;padding:16px;">
             No courses found. Try changing search/filter.
-          </td>
-        `;
+          </td>`;
         coursesTableBody.appendChild(tr);
       } else {
         filtered.forEach((course, index) => {
@@ -1092,11 +547,10 @@
         });
       }
 
-      // stats total = actual courses count (not filtered)
       statCourses.textContent = courses.length.toString();
     }
 
-    coursesTableBody.addEventListener('click', (e) => {
+    coursesTableBody.addEventListener('click', async (e) => {
       const btn = e.target;
       if (!(btn instanceof HTMLElement)) return;
       const action = btn.getAttribute('data-action');
@@ -1107,23 +561,19 @@
 
       if (action === 'delete') {
         if (confirm('Delete this course?')) {
-          courses = courses.filter((c) => c.id !== courseId);
-          if (editingCourseId === courseId) {
-            resetCourseForm();
-          }
+          await fetch(`${API_BASE}/courses/${courseId}`, { method: "DELETE" });
+          if (editingCourseId === courseId) resetCourseForm();
+          if (currentContentCourseId === courseId) hideCourseContentEditor();
+          await fetchCourses();
           renderCourses();
-          // agar yahi course ka content edit ho raha tha, editor hide kar do
-          if (currentContentCourseId === courseId) {
-            hideCourseContentEditor();
-          }
         }
       } else if (action === 'edit') {
         const course = courses.find((c) => c.id === courseId);
         if (!course) return;
         editingCourseId = course.id;
-        courseTitleInput.value = course.title;
+        courseTitleInput.value = course.title || '';
         courseLevelInput.value = course.level || '';
-        courseTypeInput.value = course.type;
+        courseTypeInput.value = course.type || 'free';
         coursePriceInput.value = course.price || 0;
         courseSubtitleInput.value = course.subtitle || '';
         courseSubmitBtn.textContent = 'Update course';
@@ -1144,35 +594,36 @@
 
     courseCancelEditBtn.addEventListener('click', resetCourseForm);
 
-    courseForm.addEventListener('submit', (e) => {
+    courseForm.addEventListener('submit', async (e) => {
       e.preventDefault();
+
       const title = courseTitleInput.value.trim();
       if (!title) return;
 
-      const level = courseLevelInput.value.trim();
-      const type = courseTypeInput.value;
-      const price = coursePriceInput.value ? Number(coursePriceInput.value) : 0;
-      const subtitle = courseSubtitleInput.value.trim();
+      const payload = {
+        title,
+        level: courseLevelInput.value.trim(),
+        type: courseTypeInput.value,
+        price: coursePriceInput.value ? Number(coursePriceInput.value) : 0,
+        subtitle: courseSubtitleInput.value.trim(),
+      };
 
       if (editingCourseId) {
-        courses = courses.map((c) =>
-          c.id === editingCourseId
-            ? { ...c, title, level, type, price, subtitle }
-            : c
-        );
+        await fetch(`${API_BASE}/courses/${editingCourseId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
       } else {
-        const newId = (courses[courses.length - 1]?.id || 0) + 1;
-        courses.push({
-          id: newId,
-          title,
-          level,
-          type,
-          price,
-          subtitle
+        await fetch(`${API_BASE}/courses`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
         });
       }
 
       resetCourseForm();
+      await fetchCourses();
       renderCourses();
     });
 
@@ -1191,8 +642,7 @@
       renderCourses();
     });
 
-    // ===== COURSE CONTENT EDITOR LOGIC =====
-
+    // ===== COURSE CONTENT EDITOR (LOCAL ONLY) =====
     const courseContentEditor = document.getElementById('courseContentEditor');
     const ccCourseTitleSpan = document.getElementById('ccCourseTitle');
     const ccSectionsContainer = document.getElementById('ccSectionsContainer');
@@ -1201,7 +651,6 @@
     const ccShowJsonBtn = document.getElementById('ccShowJsonBtn');
     const ccCopyJsonBtn = document.getElementById('ccCopyJsonBtn');
 
-    // Structure: { [courseId]: [ { id, title, description, lessons: [ { id, title, type, durationLabel, isLocked, contentUrl } ] } ] }
     let courseContents = {};
     let currentContentCourseId = null;
 
@@ -1224,11 +673,7 @@
       currentContentCourseId = courseId;
       ccCourseTitleSpan.textContent = course.title;
 
-      if (!courseContents[courseId]) {
-        // Default: ek blank sections array
-        courseContents[courseId] = [];
-      }
-
+      if (!courseContents[courseId]) courseContents[courseId] = [];
       renderCourseContent();
       courseContentEditor.style.display = 'block';
       courseContentEditor.scrollIntoView({ behavior: 'smooth' });
@@ -1253,21 +698,13 @@
         }))
       }));
 
-      return {
-        courseId: course.id,
-        courseTitle: course.title,
-        sections
-      };
+      return { courseId: course.id, courseTitle: course.title, sections };
     }
 
     function updateJsonPreview() {
       if (!ccJsonOutput) return;
       const payload = getCurrentCourseContentPayload();
-      if (!payload) {
-        ccJsonOutput.value = '';
-        return;
-      }
-      ccJsonOutput.value = JSON.stringify(payload, null, 2);
+      ccJsonOutput.value = payload ? JSON.stringify(payload, null, 2) : '';
     }
 
     function renderCourseContent() {
@@ -1277,8 +714,7 @@
       if (sections.length === 0) {
         ccSectionsContainer.innerHTML = `
           <p class="muted" style="margin-top:4px;">
-            Abhi koi section nahi hai. "Add section" se naya section banao
-            (e.g. "Kinematics", "Vectors", "Introduction" etc.)
+            Abhi koi section nahi hai. "Add section" se naya section banao.
           </p>
         `;
         updateJsonPreview();
@@ -1300,9 +736,7 @@
                 <button class="btn-secondary" data-cc-action="delete-section" data-sec-id="${sec.id}">Delete</button>
               </div>
             </div>
-            <div class="cc-lessons-wrapper">
-              ${renderLessonsTable(sec)}
-            </div>
+            <div class="cc-lessons-wrapper">${renderLessonsTable(sec)}</div>
           </div>
         `;
       });
@@ -1314,11 +748,7 @@
     function renderLessonsTable(sec) {
       const lessons = sec.lessons || [];
       if (lessons.length === 0) {
-        return `
-          <div class="muted">
-            No lessons in this section yet. "Add Lesson" se video/pdf/quiz add karo.
-          </div>
-        `;
+        return `<div class="muted">No lessons yet. "Add Lesson" se add karo.</div>`;
       }
 
       let rows = '';
@@ -1333,12 +763,8 @@
             <td>${escapeHtml(lesson.durationLabel || '')}</td>
             <td><span class="${lockClass}">${lockText}</span></td>
             <td>
-              <button class="btn-secondary" data-cc-action="edit-lesson" data-sec-id="${sec.id}" data-lesson-id="${lesson.id}">
-                Edit
-              </button>
-              <button class="btn-secondary" data-cc-action="delete-lesson" data-sec-id="${sec.id}" data-lesson-id="${lesson.id}">
-                Delete
-              </button>
+              <button class="btn-secondary" data-cc-action="edit-lesson" data-sec-id="${sec.id}" data-lesson-id="${lesson.id}">Edit</button>
+              <button class="btn-secondary" data-cc-action="delete-lesson" data-sec-id="${sec.id}" data-lesson-id="${lesson.id}">Delete</button>
             </td>
           </tr>
         `;
@@ -1348,40 +774,24 @@
         <table class="cc-lessons-table">
           <thead>
             <tr>
-              <th>#</th>
-              <th>Title</th>
-              <th>Type</th>
-              <th>Duration</th>
-              <th>Lock</th>
-              <th style="width:150px;">Actions</th>
+              <th>#</th><th>Title</th><th>Type</th><th>Duration</th><th>Lock</th><th style="width:150px;">Actions</th>
             </tr>
           </thead>
-          <tbody>
-            ${rows}
-          </tbody>
+          <tbody>${rows}</tbody>
         </table>
       `;
     }
 
     ccAddSectionBtn.addEventListener('click', () => {
-      if (!currentContentCourseId) {
-        alert('Pehle kisi course ka "Content" button click karo.');
-        return;
-      }
-      const title = prompt('Section title (e.g. "Kinematics", "Introduction")');
+      if (!currentContentCourseId) { alert('Pehle kisi course ka "Content" click karo.'); return; }
+      const title = prompt('Section title (e.g. "Kinematics")');
       if (!title) return;
       const description = prompt('Section description (optional):') || '';
 
       const sections = courseContents[currentContentCourseId] || [];
       const newId = (sections[sections.length - 1]?.id || 0) + 1;
 
-      sections.push({
-        id: newId,
-        title: title.trim(),
-        description: description.trim(),
-        lessons: []
-      });
-
+      sections.push({ id: newId, title: title.trim(), description: description.trim(), lessons: [] });
       courseContents[currentContentCourseId] = sections;
       renderCourseContent();
     });
@@ -1404,7 +814,7 @@
 
       if (action === 'delete-section') {
         if (!section) return;
-        if (confirm('Delete this section and all its lessons?')) {
+        if (confirm('Delete this section and all lessons?')) {
           sections.splice(secIndex, 1);
           courseContents[currentContentCourseId] = sections;
           renderCourseContent();
@@ -1412,10 +822,9 @@
       } else if (action === 'edit-section') {
         if (!section) return;
         const newTitle = prompt('Section title:', section.title) || section.title;
-        const newDesc = prompt('Section description (optional):', section.description || '') || '';
+        const newDesc = prompt('Section description:', section.description || '') || '';
         section.title = newTitle.trim();
         section.description = newDesc.trim();
-        courseContents[currentContentCourseId] = sections;
         renderCourseContent();
       } else if (action === 'add-lesson') {
         if (!section) return;
@@ -1429,7 +838,6 @@
         if (!section || lessonId == null) return;
         if (confirm('Delete this lesson?')) {
           section.lessons = section.lessons.filter((l) => l.id !== lessonId);
-          courseContents[currentContentCourseId] = sections;
           renderCourseContent();
         }
       }
@@ -1443,16 +851,13 @@
       const typeRaw = prompt('Type (video/pdf/notes/quiz):', prev.type || 'video') || 'video';
       const type = typeRaw.trim().toLowerCase();
       if (!['video', 'pdf', 'notes', 'quiz'].includes(type)) {
-        alert('Type must be one of: video, pdf, notes, quiz');
+        alert('Type must be: video, pdf, notes, quiz');
         return;
       }
 
-      const durationLabel =
-        prompt('Duration label (e.g. "10 min", optional):', prev.durationLabel || '') || '';
-      const contentUrl =
-        prompt('Content URL (YouTube link / PDF link etc., optional):', prev.contentUrl || '') || '';
-      const lockAnswer =
-        prompt('Is this lesson locked for premium only? (yes/no):', prev.isLocked ? 'yes' : 'no') || 'no';
+      const durationLabel = prompt('Duration label (optional):', prev.durationLabel || '') || '';
+      const contentUrl = prompt('Content URL (optional):', prev.contentUrl || '') || '';
+      const lockAnswer = prompt('Locked for premium only? (yes/no):', prev.isLocked ? 'yes' : 'no') || 'no';
       const isLocked = lockAnswer.trim().toLowerCase().startsWith('y');
 
       if (existingLesson) {
@@ -1464,54 +869,29 @@
       } else {
         const lessons = section.lessons || [];
         const newLessonId = (lessons[lessons.length - 1]?.id || 0) + 1;
-        lessons.push({
-          id: newLessonId,
-          title: title.trim(),
-          type,
-          durationLabel: durationLabel.trim(),
-          contentUrl: contentUrl.trim(),
-          isLocked
-        });
+        lessons.push({ id: newLessonId, title: title.trim(), type, durationLabel: durationLabel.trim(), contentUrl: contentUrl.trim(), isLocked });
         section.lessons = lessons;
       }
-
       renderCourseContent();
     }
 
-    // JSON buttons
     if (ccShowJsonBtn) {
       ccShowJsonBtn.addEventListener('click', () => {
         if (!ccJsonOutput) return;
         const isHidden = ccJsonOutput.style.display === 'none' || ccJsonOutput.style.display === '';
-        if (isHidden) {
-          updateJsonPreview();
-          ccJsonOutput.style.display = 'block';
-          ccShowJsonBtn.textContent = 'Hide JSON';
-        } else {
-          ccJsonOutput.style.display = 'none';
-          ccShowJsonBtn.textContent = 'Show JSON';
-        }
+        if (isHidden) { updateJsonPreview(); ccJsonOutput.style.display = 'block'; ccShowJsonBtn.textContent = 'Hide JSON'; }
+        else { ccJsonOutput.style.display = 'none'; ccShowJsonBtn.textContent = 'Show JSON'; }
       });
     }
-
     if (ccCopyJsonBtn) {
       ccCopyJsonBtn.addEventListener('click', async () => {
-        if (!ccJsonOutput) return;
-        if (!ccJsonOutput.value) {
-          updateJsonPreview();
-        }
-        try {
-          await navigator.clipboard.writeText(ccJsonOutput.value || '');
-          alert('Course content JSON copied to clipboard!');
-        } catch (err) {
-          console.error(err);
-          alert('Copy failed. Aap manually bhi JSON select karke copy kar sakte ho.');
-        }
+        if (!ccJsonOutput.value) updateJsonPreview();
+        try { await navigator.clipboard.writeText(ccJsonOutput.value || ''); alert('Course content JSON copied!'); }
+        catch { alert('Copy failed. Manually copy JSON.'); }
       });
     }
 
-    // ===== TESTS FRONTEND LOGIC =====
-       // ===== TESTS FRONTEND LOGIC =====
+    // ===== TESTS =====
     const testsTableBody = document.querySelector('#testsTable tbody');
     const testForm = document.getElementById('testForm');
     const statTests = document.getElementById('stat-tests');
@@ -1523,7 +903,6 @@
     const testSubmitBtn = document.getElementById('testSubmitBtn');
     const testCancelEditBtn = document.getElementById('testCancelEditBtn');
     const addTestScrollBtn = document.getElementById('addTestScrollBtn');
-
     const testSearchInput = document.getElementById('testSearch');
     const testFilterStatusSelect = document.getElementById('testFilterStatus');
 
@@ -1531,15 +910,19 @@
     let testSearchTerm = '';
     let testFilterStatus = 'all';
 
-    // 🔹 NEW: Test content builder DOM + state
     const testContentEditor = document.getElementById('testContentEditor');
     const tcTestTitleSpan = document.getElementById('tcTestTitle');
     const tcQuestionsContainer = document.getElementById('tcQuestionsContainer');
     const tcAddQuestionBtn = document.getElementById('tcAddQuestionBtn');
 
-    // Structure: { [testId]: [ { id, text, marks, negativeMarks, explanation, options: [ { id, label, text, isCorrect } ] } ] }
     let testsContents = {};
     let currentContentTestId = null;
+
+    async function fetchTests() {
+      const res = await fetch(`${API_BASE}/tests`);
+      if (!res.ok) throw new Error("Failed to load tests");
+      tests = await res.json();
+    }
 
     function hideTestContentEditor() {
       currentContentTestId = null;
@@ -1551,91 +934,34 @@
     function openTestContentEditor(testId) {
       const t = tests.find((x) => x.id === testId);
       if (!t) return;
-
       currentContentTestId = testId;
       tcTestTitleSpan.textContent = t.name;
-
-      if (!testsContents[testId]) {
-        testsContents[testId] = [];
-      }
-
+      if (!testsContents[testId]) testsContents[testId] = [];
       renderTestContent();
       testContentEditor.style.display = 'block';
       testContentEditor.scrollIntoView({ behavior: 'smooth' });
     }
 
-    function getCurrentTestContentPayload() {
-      if (!currentContentTestId) return null;
-      const t = tests.find((x) => x.id === currentContentTestId);
-      if (!t) return null;
-
-      const questions = (testsContents[currentContentTestId] || []).map((q) => ({
-        id: q.id,
-        text: q.text,
-        marks: q.marks,
-        negativeMarks: q.negativeMarks,
-        explanation: q.explanation,
-        options: (q.options || []).map((opt) => ({
-          id: opt.id,
-          label: opt.label,
-          text: opt.text,
-          isCorrect: !!opt.isCorrect
-        }))
-      }));
-
-      // Ye payload baad me backend/Firestore ke liye directly use ho sakta hai
-      return {
-        testId: t.id,
-        testName: t.name,
-        course: t.course || '',
-        questions
-      };
-    }
-
     function renderTestContent() {
       if (!currentContentTestId) return;
-
       const questions = testsContents[currentContentTestId] || [];
       if (questions.length === 0) {
-        tcQuestionsContainer.innerHTML = `
-          <p class="muted" style="margin-top:4px;">
-            Abhi koi question nahi hai. "Add question" se MCQ add karo.
-          </p>
-        `;
+        tcQuestionsContainer.innerHTML = `<p class="muted" style="margin-top:4px;">Abhi koi question nahi hai. "Add question" se MCQ add karo.</p>`;
         return;
       }
 
       let html = '';
       questions.forEach((q, index) => {
         const marksText = (q.marks ?? q.marks === 0) ? `Marks: ${q.marks}` : '';
-        const negText = (q.negativeMarks ?? q.negativeMarks === 0)
-          ? (q.negativeMarks ? ` | Negative: -${q.negativeMarks}` : ' | Negative: 0')
-          : '';
+        const negText = (q.negativeMarks ?? q.negativeMarks === 0) ? (q.negativeMarks ? ` | Negative: -${q.negativeMarks}` : ' | Negative: 0') : '';
         const metaLine = (marksText || negText) ? (marksText + negText) : '';
 
         let optionsRows = '';
         (q.options || []).forEach((opt) => {
-          const badge = opt.isCorrect
-            ? '<span class="cc-tag-unlock">Correct</span>'
-            : '<span class="cc-tag-lock">Incorrect</span>';
-          optionsRows += `
-            <tr>
-              <td>${escapeHtml(opt.label)}</td>
-              <td>${escapeHtml(opt.text)}</td>
-              <td>${badge}</td>
-            </tr>
-          `;
+          const badge = opt.isCorrect ? '<span class="cc-tag-unlock">Correct</span>' : '<span class="cc-tag-lock">Incorrect</span>';
+          optionsRows += `<tr><td>${escapeHtml(opt.label)}</td><td>${escapeHtml(opt.text)}</td><td>${badge}</td></tr>`;
         });
-
-        if (!optionsRows) {
-          optionsRows = `
-            <tr>
-              <td colspan="3" style="font-size:11px;color:#9ca3af;padding:6px 8px;">
-                No options added for this question.
-              </td>
-            </tr>
-          `;
-        }
+        if (!optionsRows) optionsRows = `<tr><td colspan="3" style="font-size:11px;color:#9ca3af;padding:6px 8px;">No options added.</td></tr>`;
 
         html += `
           <div class="cc-section-card">
@@ -1653,15 +979,9 @@
             <div class="cc-lessons-wrapper">
               <table class="cc-lessons-table">
                 <thead>
-                  <tr>
-                    <th style="width:60px;">Option</th>
-                    <th>Text</th>
-                    <th style="width:90px;">Correct?</th>
-                  </tr>
+                  <tr><th style="width:60px;">Option</th><th>Text</th><th style="width:90px;">Correct?</th></tr>
                 </thead>
-                <tbody>
-                  ${optionsRows}
-                </tbody>
+                <tbody>${optionsRows}</tbody>
               </table>
             </div>
           </div>
@@ -1672,59 +992,38 @@
     }
 
     function addOrEditQuestion(existingQuestion) {
-      if (!currentContentTestId) {
-        alert('Pehle kisi test ka "Content" button click karo.');
-        return;
-      }
-
+      if (!currentContentTestId) { alert('Pehle kisi test ka "Content" click karo.'); return; }
       const prev = existingQuestion || {};
       const questionsArr = testsContents[currentContentTestId] || [];
 
       const text = prompt('Question text:', prev.text || '');
       if (!text) return;
 
-      const marksRaw = prompt('Marks for correct answer (e.g. 4):', prev.marks != null ? String(prev.marks) : '1');
+      const marksRaw = prompt('Marks (e.g. 4):', prev.marks != null ? String(prev.marks) : '1');
       const marks = marksRaw ? Number(marksRaw) : null;
 
-      const negRaw = prompt('Negative marks (e.g. 1 or 0, optional):', prev.negativeMarks != null ? String(prev.negativeMarks) : '0');
-      const negativeMarks = negRaw !== null && negRaw !== '' ? Number(negRaw) : null;
+      const negRaw = prompt('Negative marks (e.g. 1 or 0):', prev.negativeMarks != null ? String(prev.negativeMarks) : '0');
+      const negativeMarks = (negRaw !== null && negRaw !== '') ? Number(negRaw) : null;
 
       const explanation = prompt('Explanation (optional):', prev.explanation || '') || '';
 
       let optionsCountRaw = prompt('Number of options (3–6):', prev.options ? String(prev.options.length) : '4');
       let optionsCount = optionsCountRaw ? Number(optionsCountRaw) : 4;
-      if (isNaN(optionsCount) || optionsCount < 3 || optionsCount > 6) {
-        optionsCount = 4;
-      }
+      if (isNaN(optionsCount) || optionsCount < 3 || optionsCount > 6) optionsCount = 4;
 
-      const labels = ['A', 'B', 'C', 'D', 'E', 'F'];
+      const labels = ['A','B','C','D','E','F'];
       const options = [];
       for (let i = 0; i < optionsCount; i++) {
         const prevOpt = prev.options && prev.options[i] ? prev.options[i].text : '';
         const optText = prompt(`Option ${labels[i]} text:`, prevOpt || '');
-        if (!optText) {
-          alert('Option text empty, question cancel kar diya gaya.');
-          return;
-        }
-        options.push({
-          id: i + 1,
-          label: labels[i],
-          text: optText.trim(),
-          isCorrect: false
-        });
+        if (!optText) { alert('Option empty, cancel.'); return; }
+        options.push({ id: i+1, label: labels[i], text: optText.trim(), isCorrect: false });
       }
 
-      let correctRaw = prompt(
-        `Correct option number (1-${optionsCount}) (e.g. 1 for ${labels[0]}):`,
-        '1'
-      );
+      let correctRaw = prompt(`Correct option number (1-${optionsCount}):`, '1');
       let correctIndex = correctRaw ? Number(correctRaw) : 1;
-      if (isNaN(correctIndex) || correctIndex < 1 || correctIndex > optionsCount) {
-        correctIndex = 1;
-      }
-      options.forEach((opt, idx) => {
-        opt.isCorrect = idx === (correctIndex - 1);
-      });
+      if (isNaN(correctIndex) || correctIndex < 1 || correctIndex > optionsCount) correctIndex = 1;
+      options.forEach((opt, idx) => opt.isCorrect = idx === (correctIndex - 1));
 
       if (existingQuestion) {
         existingQuestion.text = text.trim();
@@ -1734,23 +1033,14 @@
         existingQuestion.options = options;
       } else {
         const newId = (questionsArr[questionsArr.length - 1]?.id || 0) + 1;
-        questionsArr.push({
-          id: newId,
-          text: text.trim(),
-          marks,
-          negativeMarks,
-          explanation: explanation.trim(),
-          options
-        });
+        questionsArr.push({ id: newId, text: text.trim(), marks, negativeMarks, explanation: explanation.trim(), options });
         testsContents[currentContentTestId] = questionsArr;
       }
 
       renderTestContent();
     }
 
-    tcAddQuestionBtn.addEventListener('click', () => {
-      addOrEditQuestion(null);
-    });
+    tcAddQuestionBtn.addEventListener('click', () => addOrEditQuestion(null));
 
     tcQuestionsContainer.addEventListener('click', (e) => {
       const btn = e.target;
@@ -1765,9 +1055,8 @@
       if (qIndex === -1) return;
       const question = questionsArr[qIndex];
 
-      if (action === 'edit-question') {
-        addOrEditQuestion(question);
-      } else if (action === 'delete-question') {
+      if (action === 'edit-question') addOrEditQuestion(question);
+      else if (action === 'delete-question') {
         if (confirm('Delete this question?')) {
           questionsArr.splice(qIndex, 1);
           testsContents[currentContentTestId] = questionsArr;
@@ -1783,28 +1072,25 @@
         const term = testSearchTerm;
         const matchesSearch =
           !term ||
-          t.name.toLowerCase().includes(term) ||
+          (t.name && t.name.toLowerCase().includes(term)) ||
           (t.course && t.course.toLowerCase().includes(term));
 
-        const matchesStatus =
-          testFilterStatus === 'all' || t.status === testFilterStatus;
-
+        const matchesStatus = testFilterStatus === 'all' || t.status === testFilterStatus;
         return matchesSearch && matchesStatus;
       });
 
       if (filtered.length === 0) {
         const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td colspan="7" style="text-align:center;color:#9ca3af;font-size:12px;padding:16px;">
+        tr.innerHTML = `<td colspan="7" style="text-align:center;color:#9ca3af;font-size:12px;padding:16px;">
             No tests found. Try changing search/filter.
-          </td>
-        `;
+          </td>`;
         testsTableBody.appendChild(tr);
       } else {
         filtered.forEach((t, index) => {
           const tr = document.createElement('tr');
           const badgeClass = t.status === 'free' ? 'badge-free' : 'badge-paid';
           const badgeText = t.status === 'free' ? 'Free' : 'Premium';
+
           tr.innerHTML = `
             <td>${index + 1}</td>
             <td>${escapeHtml(t.name)}</td>
@@ -1825,7 +1111,7 @@
       statTests.textContent = tests.length.toString();
     }
 
-    testsTableBody.addEventListener('click', (e) => {
+    testsTableBody.addEventListener('click', async (e) => {
       const btn = e.target;
       if (!(btn instanceof HTMLElement)) return;
       const action = btn.getAttribute('data-action');
@@ -1835,25 +1121,21 @@
 
       if (action === 'delete-test') {
         if (confirm('Delete this test?')) {
-          tests = tests.filter((t) => t.id !== testId);
-          if (editingTestId === testId) {
-            resetTestForm();
-          }
-          // agar yahi test ka content edit ho raha tha, editor hide kar do
-          if (currentContentTestId === testId) {
-            hideTestContentEditor();
-          }
+          await fetch(`${API_BASE}/tests/${testId}`, { method: "DELETE" });
+          if (editingTestId === testId) resetTestForm();
+          if (currentContentTestId === testId) hideTestContentEditor();
+          await fetchTests();
           renderTests();
         }
       } else if (action === 'edit-test') {
         const t = tests.find((x) => x.id === testId);
         if (!t) return;
         editingTestId = t.id;
-        testNameInput.value = t.name;
+        testNameInput.value = t.name || '';
         testCourseInput.value = t.course || '';
         testQuestionsInput.value = t.questions || '';
         testDurationInput.value = t.duration || '';
-        testStatusInput.value = t.status;
+        testStatusInput.value = t.status || 'free';
         testSubmitBtn.textContent = 'Update test';
         testCancelEditBtn.style.display = 'inline-flex';
         testForm.scrollIntoView({ behavior: 'smooth' });
@@ -1872,35 +1154,36 @@
 
     testCancelEditBtn.addEventListener('click', resetTestForm);
 
-    testForm.addEventListener('submit', (e) => {
+    testForm.addEventListener('submit', async (e) => {
       e.preventDefault();
+
       const name = testNameInput.value.trim();
       if (!name) return;
 
-      const courseName = testCourseInput.value.trim();
-      const questions = testQuestionsInput.value ? Number(testQuestionsInput.value) : null;
-      const duration = testDurationInput.value.trim();
-      const status = testStatusInput.value;
+      const payload = {
+        name,
+        course: testCourseInput.value.trim(),
+        questions: testQuestionsInput.value ? Number(testQuestionsInput.value) : 0,
+        duration: testDurationInput.value.trim(),
+        status: testStatusInput.value
+      };
 
       if (editingTestId) {
-        tests = tests.map((t) =>
-          t.id === editingTestId
-            ? { ...t, name, course: courseName, questions, duration, status }
-            : t
-        );
+        await fetch(`${API_BASE}/tests/${editingTestId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
       } else {
-        const newId = (tests[tests.length - 1]?.id || 0) + 1;
-        tests.push({
-          id: newId,
-          name,
-          course: courseName,
-          questions,
-          duration,
-          status
+        await fetch(`${API_BASE}/tests`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
         });
       }
 
       resetTestForm();
+      await fetchTests();
       renderTests();
     });
 
@@ -1919,8 +1202,7 @@
       renderTests();
     });
 
-
-    // ===== UPDATES FRONTEND LOGIC =====
+    // ===== UPDATES =====
     const updatesTableBody = document.querySelector('#updatesTable tbody');
     const updateForm = document.getElementById('updateForm');
     const statUpdates = document.getElementById('stat-updates');
@@ -1930,11 +1212,16 @@
     const updateSubmitBtn = document.getElementById('updateSubmitBtn');
     const updateCancelEditBtn = document.getElementById('updateCancelEditBtn');
     const addUpdateScrollBtn = document.getElementById('addUpdateScrollBtn');
-
     const updateSearchInput = document.getElementById('updateSearch');
 
     let editingUpdateId = null;
     let updateSearchTerm = '';
+
+    async function fetchUpdates() {
+      const res = await fetch(`${API_BASE}/updates`);
+      if (!res.ok) throw new Error("Failed to load updates");
+      updates = await res.json();
+    }
 
     function renderUpdates() {
       updatesTableBody.innerHTML = '';
@@ -1943,18 +1230,16 @@
         const term = updateSearchTerm;
         return (
           !term ||
-          u.title.toLowerCase().includes(term) ||
+          (u.title && u.title.toLowerCase().includes(term)) ||
           (u.body && u.body.toLowerCase().includes(term))
         );
       });
 
       if (filtered.length === 0) {
         const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td colspan="5" style="text-align:center;color:#9ca3af;font-size:12px;padding:16px;">
+        tr.innerHTML = `<td colspan="5" style="text-align:center;color:#9ca3af;font-size:12px;padding:16px;">
             No updates found. Try changing search.
-          </td>
-        `;
+          </td>`;
         updatesTableBody.appendChild(tr);
       } else {
         filtered.forEach((u, index) => {
@@ -1966,7 +1251,7 @@
               <span style="font-size:11px;color:#6b7280;">${escapeHtml(u.body || '')}</span>
             </td>
             <td>${escapeHtml(u.audience || 'All')}</td>
-            <td>${escapeHtml(u.createdAt || '-')}</td>
+            <td>${escapeHtml(u.created_at || '-')}</td>
             <td>
               <button class="btn-secondary" data-action="edit-update" data-id="${u.id}">Edit</button>
               <button class="btn-secondary" data-action="delete-update" data-id="${u.id}">Delete</button>
@@ -1979,7 +1264,7 @@
       statUpdates.textContent = updates.length.toString();
     }
 
-    updatesTableBody.addEventListener('click', (e) => {
+    updatesTableBody.addEventListener('click', async (e) => {
       const btn = e.target;
       if (!(btn instanceof HTMLElement)) return;
       const action = btn.getAttribute('data-action');
@@ -1989,17 +1274,16 @@
 
       if (action === 'delete-update') {
         if (confirm('Delete this update?')) {
-          updates = updates.filter((u) => u.id !== updateId);
-          if (editingUpdateId === updateId) {
-            resetUpdateForm();
-          }
+          await fetch(`${API_BASE}/updates/${updateId}`, { method: "DELETE" });
+          if (editingUpdateId === updateId) resetUpdateForm();
+          await fetchUpdates();
           renderUpdates();
         }
       } else if (action === 'edit-update') {
         const u = updates.find((x) => x.id === updateId);
         if (!u) return;
         editingUpdateId = u.id;
-        updateTitleInput.value = u.title;
+        updateTitleInput.value = u.title || '';
         updateAudienceInput.value = u.audience || '';
         updateBodyInput.value = u.body || '';
         updateSubmitBtn.textContent = 'Update update';
@@ -2018,36 +1302,33 @@
 
     updateCancelEditBtn.addEventListener('click', resetUpdateForm);
 
-    updateForm.addEventListener('submit', (e) => {
+    updateForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const title = updateTitleInput.value.trim();
       if (!title) return;
 
-      const audience = updateAudienceInput.value.trim();
-      const body = updateBodyInput.value.trim();
-      const createdAt = new Date().toLocaleDateString('en-IN', {
-        day: '2-digit',
-        month: 'short'
-      });
+      const payload = {
+        title,
+        audience: updateAudienceInput.value.trim(),
+        body: updateBodyInput.value.trim(),
+      };
 
       if (editingUpdateId) {
-        updates = updates.map((u) =>
-          u.id === editingUpdateId
-            ? { ...u, title, audience, body }
-            : u
-        );
+        await fetch(`${API_BASE}/updates/${editingUpdateId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
       } else {
-        const newId = (updates[updates.length - 1]?.id || 0) + 1;
-        updates.push({
-          id: newId,
-          title,
-          audience,
-          body,
-          createdAt
+        await fetch(`${API_BASE}/updates`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
         });
       }
 
       resetUpdateForm();
+      await fetchUpdates();
       renderUpdates();
     });
 
@@ -2072,10 +1353,19 @@
         .replace(/'/g, '&#39;');
     }
 
-    // ===== INITIAL RENDER =====
-    renderCourses();
-    renderTests();
-    renderUpdates();
+    async function bootstrapLoad() {
+      try {
+        await fetchCourses();
+        await fetchTests();
+        await fetchUpdates();
+        renderCourses();
+        renderTests();
+        renderUpdates();
+      } catch (err) {
+        console.error(err);
+        alert("Backend not reachable. Make sure backend is running on http://localhost:8080");
+      }
+    }
   </script>
 </body>
 </html>
