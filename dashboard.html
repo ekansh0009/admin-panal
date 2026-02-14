@@ -421,12 +421,12 @@
 
 <script>
 /* =========================
-   PAPI ADMIN PANEL (FULL JS)
+   PAPI ADMIN PANEL (FULL JS) - DB CONNECTED ✅
    - Nav working
    - Dashboard stats working
    - Courses/Tests/Updates CRUD
-   - Course Content Editor: dynamic fields + validation + open buttons + save
-   - Test Questions Editor: add/remove + validation + save
+   - Course Content Editor: dynamic fields + validation + open buttons + save (DB)
+   - Test Questions Editor: add/remove + validation + load/save (DB)
    ========================= */
 
 const API_BASE = "http://localhost:8080/api"; // change if needed
@@ -517,8 +517,6 @@ function isLikelyUrl(s) {
 }
 
 function toast(msg, type = "info") {
-  // quick toast using alert-like UI
-  // you can replace with nicer toast later
   if (type === "error") console.error(msg);
   if (type === "success") console.log(msg);
   alert(msg);
@@ -536,6 +534,12 @@ async function api(path, opts = {}) {
   const ct = res.headers.get("content-type") || "";
   if (ct.includes("application/json")) return await res.json();
   return await res.text();
+}
+
+function syncCourseJsonPanelIfOpen() {
+  if (ccJsonOutput.style.display === "block") {
+    ccJsonOutput.value = JSON.stringify(currentCourseContent, null, 2);
+  }
 }
 
 /* ========= AUTH ========= */
@@ -574,7 +578,7 @@ let currentContentTestId = null;
 let currentContentTest = null; // test row
 let currentTestQuestions = []; // array of questions
 
-/* ========= NAV (FIX STUCK DASHBOARD) ========= */
+/* ========= NAV ========= */
 function initNav() {
   const navLinks = document.querySelectorAll(".nav-link");
   const sections = document.querySelectorAll(".section");
@@ -594,15 +598,9 @@ function initNav() {
 }
 
 /* ========= FETCH ========= */
-async function fetchCourses() {
-  courses = await api("/courses");
-}
-async function fetchTests() {
-  tests = await api("/tests");
-}
-async function fetchUpdates() {
-  updates = await api("/updates");
-}
+async function fetchCourses() { courses = await api("/courses"); }
+async function fetchTests() { tests = await api("/tests"); }
+async function fetchUpdates() { updates = await api("/updates"); }
 
 /* ========= DASHBOARD STATS ========= */
 function renderStats() {
@@ -626,9 +624,9 @@ async function renderCourses() {
       <td>${escapeHtml(c.type || "free")}</td>
       <td>₹${Number(c.price || 0)}</td>
       <td>
-        <button class="btn-secondary" data-edit> Edit </button>
-        <button class="btn-secondary" data-content> Content </button>
-        <button class="btn-secondary" data-del> Delete </button>
+        <button class="btn-secondary" data-edit>Edit</button>
+        <button class="btn-secondary" data-content>Content</button>
+        <button class="btn-secondary" data-del>Delete</button>
       </td>
     `;
     tr.querySelector("[data-edit]").onclick = () => startEditCourse(c);
@@ -666,13 +664,10 @@ courseForm.addEventListener("submit", async (e) => {
   if (!payload.title) return toast("Course title required", "error");
 
   if (editingCourseId) {
-    // if your backend has PUT /courses/:id, use it. If not, you can delete+recreate.
-    // For now we will call POST to create new if PUT not available.
     try {
       await api(`/courses/${editingCourseId}`, { method: "PUT", body: JSON.stringify(payload) });
     } catch (_) {
-      // fallback: show message
-      toast("Backend PUT /courses/:id not found. Add route OR delete+create.", "error");
+      toast("Backend PUT /courses/:id missing. Add route OR delete+create.", "error");
       return;
     }
     editingCourseId = null;
@@ -700,9 +695,9 @@ async function renderTests() {
       <td>${escapeHtml(t.duration || "-")}</td>
       <td>${escapeHtml(t.status || "free")}</td>
       <td>
-        <button class="btn-secondary" data-edit> Edit </button>
-        <button class="btn-secondary" data-content> Questions </button>
-        <button class="btn-secondary" data-del> Delete </button>
+        <button class="btn-secondary" data-edit>Edit</button>
+        <button class="btn-secondary" data-content>Questions</button>
+        <button class="btn-secondary" data-del>Delete</button>
       </td>
     `;
     tr.querySelector("[data-edit]").onclick = () => startEditTest(t);
@@ -743,7 +738,7 @@ testForm.addEventListener("submit", async (e) => {
     try {
       await api(`/tests/${editingTestId}`, { method: "PUT", body: JSON.stringify(payload) });
     } catch (_) {
-      toast("Backend PUT /tests/:id not found. Add route OR delete+create.", "error");
+      toast("Backend PUT /tests/:id missing. Add route OR delete+create.", "error");
       return;
     }
     editingTestId = null;
@@ -769,8 +764,8 @@ async function renderUpdates() {
       <td>${escapeHtml(u.audience || "All")}</td>
       <td>${escapeHtml(u.created_at || "-")}</td>
       <td>
-        <button class="btn-secondary" data-edit> Edit </button>
-        <button class="btn-secondary" data-del> Delete </button>
+        <button class="btn-secondary" data-edit>Edit</button>
+        <button class="btn-secondary" data-del>Delete</button>
       </td>
     `;
     tr.querySelector("[data-edit]").onclick = () => startEditUpdate(u);
@@ -814,10 +809,10 @@ updateForm.addEventListener("submit", async (e) => {
 });
 
 /* ======================================================
-   COURSE CONTENT EDITOR (FULLY WORKING)
+   COURSE CONTENT EDITOR (DB CONNECTED ✅)
    - Dynamic field based on type
    - Validation
-   - Open button (preview)
+   - Open button
    - Save to DB (PUT /courses/:id/content)
    ====================================================== */
 
@@ -826,7 +821,7 @@ function typeFieldConfig(type) {
     case "video": return { key: "video_url", label: "Video URL", placeholder: "https://..." };
     case "pdf":   return { key: "pdf_url", label: "PDF URL", placeholder: "https://.../file.pdf" };
     case "link":  return { key: "external_link", label: "External link", placeholder: "https://..." };
-    case "quiz":  return { key: "quiz_id", label: "Quiz/Test ID", placeholder: "e.g. 12 or test_12" };
+    case "quiz":  return { key: "quiz_id", label: "Quiz/Test ID", placeholder: "e.g. 12" };
     case "note":  return { key: "description", label: "Note text", placeholder: "Write note..." };
     default:      return { key: "external_link", label: "Value", placeholder: "..." };
   }
@@ -857,7 +852,6 @@ function setTypeValue(it, value) {
   ensureItemKeys(it);
   const cfg = typeFieldConfig(it.type);
 
-  // clean other fields so payload stays neat
   if (cfg.key !== "video_url") it.video_url = "";
   if (cfg.key !== "pdf_url") it.pdf_url = "";
   if (cfg.key !== "external_link") it.external_link = "";
@@ -868,9 +862,8 @@ function setTypeValue(it, value) {
 }
 
 function normalizeCourseContentFromBackend(raw) {
-  // backend may return: {sections: []} OR {modules: []}
+  // backend may return: {sections: []} OR {modules: []} OR empty
   const sections = raw?.sections ?? raw?.modules ?? [];
-  // ensure structure: sections[{id,title,description,order,items:[]}]
   return {
     sections: (Array.isArray(sections) ? sections : []).map((s, idx) => ({
       id: String(s.id ?? `sec_${idx}_${Date.now()}`),
@@ -879,7 +872,6 @@ function normalizeCourseContentFromBackend(raw) {
       order: Number(s.order ?? idx),
       items: (Array.isArray(s.items) ? s.items : []).map((it) => {
         ensureItemKeys(it);
-        // map snake/camel just in case
         it.duration_minutes ??= it.durationMinutes ?? 0;
         it.is_locked ??= it.isLocked ?? false;
         it.is_preview ??= it.isPreview ?? false;
@@ -910,7 +902,7 @@ function validateCourseContent(payload) {
       const cfg = typeFieldConfig(it.type);
       const v = String(it[cfg.key] || "").trim();
 
-      if (it.type === "video" || it.type === "pdf" || it.type === "link") {
+      if (["video","pdf","link"].includes(it.type)) {
         if (!v) errors.push(`Section ${sIdx + 1} Lesson ${iIdx + 1}: ${cfg.label} required`);
         else if (!isLikelyUrl(v)) errors.push(`Section ${sIdx + 1} Lesson ${iIdx + 1}: ${cfg.label} must be a valid URL`);
       }
@@ -930,22 +922,20 @@ async function openCourseContentEditor(courseId) {
   currentContentCourseId = courseId;
   currentContentCourse = courses.find((c) => c.id === courseId) || { title: `Course #${courseId}` };
 
-  // GET /courses/:id/content
   const raw = await api(`/courses/${courseId}/content`);
   currentCourseContent = normalizeCourseContentFromBackend(raw);
 
   ccCourseTitleEl.textContent = currentContentCourse.title || `Course #${courseId}`;
   courseContentEditor.style.display = "block";
   renderCourseContentUI();
+  syncCourseJsonPanelIfOpen();
 
-  // scroll into view
   courseContentEditor.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 async function saveCourseContent() {
   if (!currentContentCourseId) return;
 
-  // sort order before save
   currentCourseContent.sections.forEach((s, idx) => (s.order = idx));
 
   const errors = validateCourseContent(currentCourseContent);
@@ -958,7 +948,9 @@ async function saveCourseContent() {
     method: "PUT",
     body: JSON.stringify(currentCourseContent),
   });
+
   toast("Course content saved ✅", "success");
+  syncCourseJsonPanelIfOpen();
 }
 
 function renderCourseContentUI() {
@@ -967,6 +959,7 @@ function renderCourseContentUI() {
   const sections = currentCourseContent.sections || [];
   if (!sections.length) {
     ccSectionsContainer.innerHTML = `<div class="muted">No sections yet. Click “Add section”.</div>`;
+    syncCourseJsonPanelIfOpen();
     return;
   }
 
@@ -1021,11 +1014,9 @@ function renderCourseContentUI() {
       </div>
     `;
 
-    // Section inputs
-    wrap.querySelector("[data-sec-title]").oninput = (e) => (sec.title = e.target.value);
-    wrap.querySelector("[data-sec-desc]").oninput = (e) => (sec.description = e.target.value);
+    wrap.querySelector("[data-sec-title]").oninput = (e) => { sec.title = e.target.value; syncCourseJsonPanelIfOpen(); };
+    wrap.querySelector("[data-sec-desc]").oninput = (e) => { sec.description = e.target.value; syncCourseJsonPanelIfOpen(); };
 
-    // Move section
     wrap.querySelector("[data-move-up]").onclick = () => {
       if (sIdx === 0) return;
       const tmp = sections[sIdx - 1];
@@ -1041,7 +1032,6 @@ function renderCourseContentUI() {
       renderCourseContentUI();
     };
 
-    // Add lesson
     wrap.querySelector("[data-add-lesson]").onclick = () => {
       sec.items ??= [];
       sec.items.push({
@@ -1060,14 +1050,12 @@ function renderCourseContentUI() {
       renderCourseContentUI();
     };
 
-    // Delete section
     wrap.querySelector("[data-del-sec]").onclick = () => {
       if (!confirm("Delete this section and its lessons?")) return;
       sections.splice(sIdx, 1);
       renderCourseContentUI();
     };
 
-    // Save + Validate buttons
     wrap.querySelector("[data-save]").onclick = () => saveCourseContent();
     wrap.querySelector("[data-validate]").onclick = () => {
       const errs = validateCourseContent(currentCourseContent);
@@ -1075,7 +1063,6 @@ function renderCourseContentUI() {
       else toast("Fix:\n\n• " + errs.join("\n• "), "error");
     };
 
-    // Lessons table rows
     const tbody = wrap.querySelector("[data-lessons]");
     tbody.innerHTML = "";
 
@@ -1142,20 +1129,20 @@ function renderCourseContentUI() {
         const delB   = tr.querySelector("[data-del]");
         const openB  = tr.querySelector("[data-open]");
 
-        titleI.oninput = () => (it.title = titleI.value);
+        titleI.oninput = () => { it.title = titleI.value; syncCourseJsonPanelIfOpen(); };
 
         typeS.onchange = () => {
           const currentValue = dynEl ? dynEl.value : "";
           it.type = typeS.value;
           setTypeValue(it, currentValue);
-          renderCourseContentUI(); // rerender for textarea/input + label
+          renderCourseContentUI();
         };
 
-        if (dynEl) dynEl.oninput = () => setTypeValue(it, dynEl.value);
+        if (dynEl) dynEl.oninput = () => { setTypeValue(it, dynEl.value); syncCourseJsonPanelIfOpen(); };
 
-        minI.oninput = () => (it.duration_minutes = Number(minI.value || 0));
-        lockC.onchange = () => (it.is_locked = !!lockC.checked);
-        prevC.onchange = () => (it.is_preview = !!prevC.checked);
+        minI.oninput = () => { it.duration_minutes = Number(minI.value || 0); syncCourseJsonPanelIfOpen(); };
+        lockC.onchange = () => { it.is_locked = !!lockC.checked; syncCourseJsonPanelIfOpen(); };
+        prevC.onchange = () => { it.is_preview = !!prevC.checked; syncCourseJsonPanelIfOpen(); };
 
         delB.onclick = () => {
           if (!confirm("Remove lesson?")) return;
@@ -1167,7 +1154,7 @@ function renderCourseContentUI() {
           const cfg2 = typeFieldConfig(it.type);
           const v = String(it[cfg2.key] || "").trim();
 
-          if (it.type === "video" || it.type === "pdf" || it.type === "link") {
+          if (["video","pdf","link"].includes(it.type)) {
             if (!isLikelyUrl(v)) return toast(`Invalid URL for ${cfg2.label}`, "error");
             window.open(v, "_blank");
             return;
@@ -1177,7 +1164,7 @@ function renderCourseContentUI() {
             return;
           }
           if (it.type === "note") {
-            toast(v ? "Note opened (see field)." : "Note empty", v ? "success" : "error");
+            toast(v ? "Note present ✅ (see text field)" : "Note empty", v ? "success" : "error");
             return;
           }
         };
@@ -1188,6 +1175,8 @@ function renderCourseContentUI() {
 
     ccSectionsContainer.appendChild(wrap);
   });
+
+  syncCourseJsonPanelIfOpen();
 }
 
 /* JSON buttons */
@@ -1219,26 +1208,16 @@ ccAddSectionBtn.onclick = () => {
 };
 
 /* ======================================================
-   TEST QUESTIONS EDITOR (FULLY WORKING)
-   - add/remove
-   - validation
-   - save to DB (PUT /tests/:id/questions)
-   Note: your backend currently only has PUT /api/tests/:id/questions (good)
-   But you DO NOT have GET /api/tests/:id/questions
-   So we will load using GET /tests/:id (your backend has it) and read questions_json if present.
+   TEST QUESTIONS EDITOR (DB CONNECTED ✅)
+   - Load:  GET /tests/:id/questions   ✅ (NEW)
+   - Save:  PUT /tests/:id/questions   ✅
+   Payload expected: { questions: [...] }
    ====================================================== */
 
-function normalizeQuestionsFromTestRow(row) {
-  // If you later store questions_json column, read it
-  // fallback: empty array
-  try {
-    if (row && row.questions_json) {
-      const q = JSON.parse(row.questions_json);
-      if (Array.isArray(q)) return q;
-      // maybe {questions:[...]}
-      if (q && Array.isArray(q.questions)) return q.questions;
-    }
-  } catch (_) {}
+function normalizeQuestionsFromBackend(raw) {
+  // backend should return {questions:[...]} or [] (we support both)
+  if (Array.isArray(raw)) return raw;
+  if (raw && Array.isArray(raw.questions)) return raw.questions;
   return [];
 }
 
@@ -1259,9 +1238,9 @@ async function openTestContentEditor(testId) {
   currentContentTestId = testId;
   currentContentTest = tests.find((t) => t.id === testId) || { name: `Test #${testId}` };
 
-  // Load test row (GET /tests/:id)
-  const row = await api(`/tests/${testId}`);
-  currentTestQuestions = normalizeQuestionsFromTestRow(row);
+  // ✅ DB load (NEW): GET /tests/:id/questions
+  const raw = await api(`/tests/${testId}/questions`);
+  currentTestQuestions = normalizeQuestionsFromBackend(raw);
 
   tcTestTitleEl.textContent = currentContentTest.name || `Test #${testId}`;
   testContentEditor.style.display = "block";
@@ -1279,11 +1258,11 @@ async function saveTestQuestions() {
     return;
   }
 
-  // PUT /tests/:id/questions (backend expects body JSON; you currently stringify whole body)
   await api(`/tests/${currentContentTestId}/questions`, {
     method: "PUT",
     body: JSON.stringify({ questions: currentTestQuestions }),
   });
+
   toast("Test questions saved ✅", "success");
 }
 
@@ -1368,7 +1347,6 @@ function renderTestQuestionsUI() {
     tcQuestionsContainer.appendChild(card);
   });
 
-  // Save + Validate buttons
   const actions = document.createElement("div");
   actions.style.marginTop = "10px";
   actions.style.display = "flex";
